@@ -1,0 +1,12 @@
+---
+import { getEntry } from 'astro:content';
+import Basis from '../layouts/Basis.astro';
+import Textseite from '../components/Textseite.astro';
+
+const seite = await getEntry('seiten', 'impressum');
+if (!seite) throw new Error('src/content/seiten/impressum.md fehlt.');
+---
+
+<Basis titel={seite.data.titel}>
+  <Textseite seite={seite} />
+</Basis>

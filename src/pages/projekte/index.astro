@@ -1,0 +1,35 @@
+---
+// Projekte: alle Beiträge auf einer Seite, nach letzter Aktivität. Die Chips oben filtern nach Bereich.
+import Basis from '../../layouts/Basis.astro';
+import Bereichsfilter from '../../components/Bereichsfilter.astro';
+import Beitragsraster from '../../components/Beitragsraster.astro';
+import { beitraege, bereiche } from '../../lib/inhalt';
+
+const alle = await beitraege();
+const bereichNamen = Object.fromEntries((await bereiche()).map((b) => [b.id, b.data.titel]));
+---
+
+<Basis titel="Projekte">
+  <Bereichsfilter />
+  <div class="rahmen projekte-kopf">
+    <h1 class="projekte-titel">Projekte</h1>
+  </div>
+  <div class="rahmen">
+    {alle.length > 0 ? <Beitragsraster beitraege={alle} bereichNamen={bereichNamen} /> : <p class="leer">Noch keine Beiträge.</p>}
+  </div>
+</Basis>
+
+<style>
+  .projekte-kopf {
+    padding-block: clamp(24px, 4cqi, 56px) clamp(32px, 4cqi, 56px);
+  }
+  .projekte-titel {
+    font-weight: 700;
+    font-size: clamp(58px, 9cqi, 132px);
+    line-height: 0.92;
+    letter-spacing: -0.05em;
+  }
+  .leer {
+    color: var(--leise);
+  }
+</style>

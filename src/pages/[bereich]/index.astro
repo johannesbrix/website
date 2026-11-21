@@ -1,0 +1,104 @@
+---
+// Bereichsseite = Projekte, gefiltert nach einem Bereich: Chips, Titel, Untertitel, Intro und Foto,
+// dann alle Beiträge des Bereichs als Kartenraster nach letzter Aktivität. Auf /menschen/ zusätzlich die Momente.
+import { render } from 'astro:content';
+import Basis from '../../layouts/Basis.astro';
+import Foto from '../../components/Foto.astro';
+import Bereichsfilter from '../../components/Bereichsfilter.astro';
+import Beitragsraster from '../../components/Beitragsraster.astro';
+import MomenteListe from '../../components/MomenteListe.astro';
+import { beitraege, bereiche, klartext, kurz, momente, teilbild, type Bereich } from '../../lib/inhalt';
+
+export async function getStaticPaths() {
+  return (await bereiche()).map((bereich) => ({ params: { bereich: bereich.id }, props: { bereich } }));
+}
+
+interface Props {
+  bereich: Bereich;
+}
+
+const { bereich } = Astro.props;
+const { titel, untertitel, bild, bild_alt } = bereich.data;
+const { Content } = await render(bereich);
+const eintraege = (await beitraege()).filter((b) => b.data.bereich === bereich.id);
+const geschichten = bereich.id === 'menschen' ? await momente() : [];
+
+const intro = klartext(bereich.body);
+const beschreibung = kurz(intro && !intro.startsWith('[') ? intro : (untertitel ?? ''));
+---
+
+<Basis titel={titel} beschreibung={beschreibung} bild={await teilbild(bild)}>
+  <Bereichsfilter aktiv={bereich.id} />
+  <section class="bereich-kopf rahmen" aria-labelledby="bereich-titel">
+    <div>
+      <h1 class="bereich-titel" id="bereich-titel">{titel}</h1>
+      {untertitel && <p class="bereich-untertitel">{untertitel}</p>}
+      {
+        bereich.body?.trim() && (
+          <div class="bereich-intro text">
+            <Content />
+          </div>
+        )
+      }
+    </div>
+    <figure class="bereich-bild">
+      <Foto bild={bild} alt={bild_alt} breiten={[800, 1200, 1600]} sizes="(max-width: 760px) 100vw, 45vw" sofort />
+    </figure>
+  </section>
+
+  <section class="abschnitt rahmen" aria-labelledby="beitraege">
+    <h2 class="titel" id="beitraege">Beiträge</h2>
+    {eintraege.length > 0 ? <Beitragsraster beitraege={eintraege} /> : <p class="leer">Noch keine Beiträge.</p>}
+  </section>
+
+  {
+    geschichten.length > 0 && (
+      <section class="abschnitt rahmen" aria-labelledby="momente">
+        <h2 class="titel" id="momente">Momente</h2>
+        <MomenteListe momente={geschichten} />
+      </section>
+    )
+  }
+</Basis>
+
+<style>
+  .bereich-kopf {
+    display: grid;
+    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+    gap: clamp(28px, 5cqi, 80px);
+    align-items: end;
+    padding-block: clamp(24px, 5cqi, 72px) clamp(8px, 2cqi, 24px);
+  }
+  .bereich-titel {
+    font-weight: 700;
+    font-size: clamp(58px, 9cqi, 132px);
+    line-height: 0.92;
+    letter-spacing: -0.05em;
+  }
+  .bereich-untertitel {
+    margin-top: clamp(12px, 1.6cqi, 20px);
+    font-family: var(--lese);
+    font-style: italic;
+    font-size: clamp(20px, 2cqi, 26px);
+    line-height: 1.35;
+    color: var(--leise);
+  }
+  .bereich-intro {
+    margin-top: clamp(18px, 2.4cqi, 28px);
+    max-width: 34em;
+    line-height: 1.6;
+  }
+  .bereich-bild :global(.bild) {
+    aspect-ratio: 4 / 3;
+    border-radius: var(--r-gross);
+  }
+  .leer {
+    color: var(--leise);
+  }
+
+  @container (max-width: 760px) {
+    .bereich-kopf {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

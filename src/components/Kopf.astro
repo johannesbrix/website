@@ -1,0 +1,203 @@
+---
+// Kopfzeile: „JB.“ links, Navigation rechts. Unter 760 px eine Pill „Menü“,
+// die ein Vollbild-Menü öffnet (modaler <dialog>: Escape schließt, der Rest der Seite ist inert).
+import { bereiche, einstellungen, plattformen } from '../lib/inhalt';
+
+const site = await einstellungen();
+const pfad = Astro.url.pathname;
+
+// Drei Türen: was ich mache, was mich antreibt, wo wir uns begegnen
+const eintraege = [
+  { name: 'Projekte', href: '/projekte/' },
+  { name: 'Rise & Shine', href: '/rise-and-shine/' },
+  { name: 'Brixmap', href: '/brixmap/' },
+];
+// Bereichsseiten, Beiträge und Momente gehören zu „Projekte“
+const projektPfade = [...(await bereiche()).map((b) => `/${b.id}/`), '/momente/'];
+
+// aria-current: „page“ auf der Seite selbst, „true“ auf Unterseiten
+function aktuell(href: string) {
+  if (pfad === href || pfad === href.slice(0, -1)) return 'page';
+  if (pfad.startsWith(href)) return 'true';
+  if (href === '/projekte/' && projektPfade.some((p) => pfad.startsWith(p) || pfad === p.slice(0, -1))) return 'true';
+  return undefined;
+}
+const links = plattformen(site.links);
+---
+
+<header class="kopf rahmen">
+  <a class="logo" href="/">JB<span class="punkt" aria-hidden="true"></span><span class="nur-sr">, {site.name}, zur Startseite</span></a>
+  <nav class="nav" aria-label="Hauptnavigation">
+    {eintraege.map((e) => <a href={e.href} aria-current={aktuell(e.href)}>{e.name}</a>)}
+  </nav>
+  <button class="menue" type="button" aria-expanded="false" aria-controls="menue" data-menue-auf>Menü</button>
+</header>
+
+<dialog class="menue-panel" id="menue" aria-label="Menü" data-menue>
+  <div class="kopf rahmen">
+    <a class="logo" href="/">JB<span class="punkt" aria-hidden="true"></span><span class="nur-sr">, {site.name}, zur Startseite</span></a>
+    <button class="menue" type="button" autofocus data-menue-zu>Schließen</button>
+  </div>
+  <nav class="rahmen menue-nav" aria-label="Hauptnavigation">
+    <ul class="liste">
+      {eintraege.map((e) => <li><a href={e.href} aria-current={aktuell(e.href)}>{e.name}</a></li>)}
+    </ul>
+  </nav>
+  {
+    links.length > 0 && (
+      <div class="rahmen menue-links">
+        <ul class="liste">
+          {links.map((l) => <li><a href={l.href} rel="me">{l.name}</a></li>)}
+        </ul>
+      </div>
+    )
+  }
+  <p class="rahmen menue-klein"><a href="/impressum/">Impressum</a><a href="/datenschutz/">Datenschutz</a></p>
+</dialog>
+
+<style>
+  .kopf {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    min-height: 84px;
+  }
+  .logo {
+    display: inline-flex;
+    align-items: baseline;
+    font-weight: 700;
+    font-size: 27px;
+    letter-spacing: -0.045em;
+    text-decoration: none;
+  }
+  .nav {
+    display: flex;
+    gap: 30px;
+  }
+  .nav a {
+    padding-block: 10px;
+    font-size: 16px;
+    font-weight: 500;
+    text-decoration: none;
+  }
+  .nav a:hover,
+  .nav a[aria-current],
+  .menue-nav a:hover,
+  .menue-nav a[aria-current],
+  .menue-links a:hover {
+    text-decoration: underline;
+    text-decoration-color: var(--orange);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 7px;
+  }
+  .menue {
+    display: none;
+    align-items: center;
+    height: 44px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--flaeche);
+    color: var(--text);
+    font: 500 15px var(--grotesk);
+    cursor: pointer;
+  }
+  @container (max-width: 760px) {
+    .nav {
+      display: none;
+    }
+    .menue {
+      display: inline-flex;
+    }
+  }
+
+  /* Vollbild-Menü */
+  .menue-panel {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    overflow-y: auto;
+    background: var(--grund);
+    color: var(--text);
+  }
+  .menue-panel::backdrop {
+    background: var(--grund);
+  }
+  .menue-panel .menue {
+    display: inline-flex;
+  }
+  .menue-nav {
+    padding-block: clamp(16px, 4cqi, 40px) 36px;
+  }
+  .menue-nav a {
+    display: block;
+    padding-block: 6px;
+    font-weight: 600;
+    font-size: 36px;
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+    text-decoration: none;
+  }
+  .menue-nav a:hover,
+  .menue-nav a[aria-current] {
+    text-underline-offset: 6px;
+  }
+  .menue-links {
+    padding-bottom: 24px;
+  }
+  .menue-klein {
+    display: flex;
+    gap: 20px;
+    padding-bottom: 40px;
+    font-size: 14px;
+    color: var(--leise);
+  }
+  .menue-klein a {
+    display: inline-block;
+    padding-block: 12px;
+    text-decoration: none;
+  }
+  .menue-links a {
+    display: block;
+    padding-block: 8px;
+    font-weight: 600;
+    font-size: 19px;
+    letter-spacing: -0.01em;
+    text-decoration: none;
+  }
+</style>
+
+<script>
+  // Hängt sich an astro:page-load, weil die Kopfzeile bei jedem Seitenwechsel neu kommt.
+  // Doppeltes Anbinden verhindern data-bereit und das Fenster-Flag.
+  function menueEinrichten() {
+    const auf = document.querySelector<HTMLButtonElement>('[data-menue-auf]');
+    const menue = document.querySelector<HTMLDialogElement>('[data-menue]');
+    if (!auf || !menue || auf.dataset.bereit !== undefined) return;
+    auf.dataset.bereit = '';
+    auf.addEventListener('click', () => {
+      menue.showModal();
+      auf.setAttribute('aria-expanded', 'true');
+    });
+    menue.addEventListener('close', () => auf.setAttribute('aria-expanded', 'false'));
+    menue.querySelector('[data-menue-zu]')?.addEventListener('click', () => menue.close());
+  }
+
+  const w = window as Window & { __jbMenue?: boolean };
+  if (!w.__jbMenue) {
+    w.__jbMenue = true;
+    document.addEventListener('astro:page-load', menueEinrichten);
+    // Wird das Fenster breiter als das Handy-Layout, schließt das Menü.
+    window.matchMedia('(min-width: 761px)').addEventListener('change', (e) => {
+      if (e.matches) document.querySelector<HTMLDialogElement>('[data-menue][open]')?.close();
+    });
+  }
+  menueEinrichten();
+</script>

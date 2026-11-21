@@ -1,0 +1,89 @@
+---
+// Basis-Layout für alle Seiten.
+// <ClientRouter /> sorgt dafür, dass die Musik beim Seitenwechsel weiterläuft
+// (Audio und fliegende Platte stecken in <div transition:persist="musik">, siehe Musik.astro).
+import { ClientRouter } from 'astro:transitions';
+import groteskUrl from '@fontsource-variable/familjen-grotesk/files/familjen-grotesk-latin-wght-normal.woff2?url';
+import Kopf from '../components/Kopf.astro';
+import Fuss from '../components/Fuss.astro';
+import Musik from '../components/Musik.astro';
+import { einstellungen } from '../lib/inhalt';
+import '../styles/global.css';
+
+interface Props {
+  /** Seitentitel ohne Namen; leer auf der Startseite */
+  titel?: string;
+  /** Für Google und die Link-Vorschau, höchstens 155 Zeichen; sonst die Beschreibung aus site.yml */
+  beschreibung?: string;
+  /** Bild für die Link-Vorschau; sonst public/og.jpg */
+  bild?: { src: string; width: number; height: number };
+  typ?: 'website' | 'article';
+  noindex?: boolean;
+  /** Abstand zwischen Inhalt und Footer (entfällt z. B. auf der Startseite, die mit dem Band endet) */
+  abstand?: boolean;
+  /** Die fliegende Platte parkt unten rechts, statt über die Seite zu fliegen (z. B. über der Karte) */
+  platteParken?: boolean;
+}
+
+const site = await einstellungen();
+const { titel, beschreibung, bild, typ = 'website', noindex = false, abstand = true, platteParken = false } = Astro.props;
+
+const volltitel = titel ? `${titel} – ${site.name}` : site.name;
+const text = beschreibung || site.beschreibung || '';
+const kanonisch = new URL(Astro.url.pathname, Astro.site);
+const teilen = bild ?? { src: '/og.jpg', width: 1200, height: 630 };
+---
+
+<!doctype html>
+<html lang="de" transition:animate="none">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{volltitel}</title>
+    {text && <meta name="description" content={text} />}
+    {noindex ? <meta name="robots" content="noindex" /> : <link rel="canonical" href={kanonisch} />}
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#373634" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <link rel="preload" href={groteskUrl} as="font" type="font/woff2" crossorigin />
+
+    <meta property="og:type" content={typ} />
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:locale" content="de_DE" />
+    <meta property="og:title" content={titel ?? site.name} />
+    {text && <meta property="og:description" content={text} />}
+    <meta property="og:url" content={kanonisch} />
+    <meta property="og:image" content={new URL(teilen.src, Astro.site)} />
+    <meta property="og:image:width" content={String(teilen.width)} />
+    <meta property="og:image:height" content={String(teilen.height)} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <slot name="head" />
+
+    <ClientRouter />
+  </head>
+  <body data-platte-parken={platteParken ? '' : undefined}>
+    <a class="skip" href="#inhalt">Zum Inhalt springen</a>
+    <Musik song={site.plattenteller} />
+    <div class="seite">
+      <Kopf />
+      <main id="inhalt" class:list={{ 'mit-abstand': abstand }}>
+        <slot />
+      </main>
+      <Fuss />
+    </div>
+    <script>
+      import '../lib/musik.js';
+    </script>
+  </body>
+</html>
+
+<style>
+  .mit-abstand {
+    padding-bottom: clamp(72px, 10cqi, 144px);
+  }
+</style>

@@ -1,0 +1,182 @@
+---
+// Beitragsseite: Zurück-Link, Titel, Tags, Fakten, Titelbild, Story, Updates, Galerie, „Mehr aus …“.
+// Leere Teile erscheinen gar nicht, auch nicht ihre Überschrift.
+import { render } from 'astro:content';
+import Basis from '../../layouts/Basis.astro';
+import Foto from '../../components/Foto.astro';
+import Galerie from '../../components/Galerie.astro';
+import Projektliste from '../../components/Projektliste.astro';
+import {
+  STATUS,
+  beitraege,
+  beitragsOrtId,
+  bereiche,
+  datum,
+  isoDatum,
+  klartext,
+  kurz,
+  teilbild,
+  type Beitrag,
+  type Bereich,
+} from '../../lib/inhalt';
+
+export async function getStaticPaths() {
+  const alle = await beitraege();
+  const alleBereiche = await bereiche();
+  return alle.map((beitrag) => ({
+    params: { bereich: beitrag.data.bereich, slug: beitrag.id },
+    props: {
+      beitrag,
+      bereich: alleBereiche.find((b) => b.id === beitrag.data.bereich)!,
+      mehr: alle.filter((b) => b.data.bereich === beitrag.data.bereich && b.id !== beitrag.id).slice(0, 3),
+    },
+  }));
+}
+
+interface Props {
+  beitrag: Beitrag;
+  bereich: Bereich;
+  mehr: Beitrag[];
+}
+
+const { beitrag, bereich, mehr } = Astro.props;
+const { titel, tags, status, zeitraum, titelbild, titelbild_alt, bildunterschrift, galerie, mitnehmen, orte } = beitrag.data;
+const { Content } = await render(beitrag);
+const hatStory = Boolean(beitrag.body?.trim());
+const updates = [...beitrag.data.updates].sort((a, b) => b.datum.getTime() - a.datum.getTime());
+
+const story = klartext(beitrag.body);
+const beschreibung = story && !story.startsWith('[') ? kurz(story) : undefined;
+---
+
+<Basis titel={titel} beschreibung={beschreibung} bild={await teilbild(titelbild)} typ="article" abstand={mehr.length === 0}>
+  <article>
+    <div class="beitrag-kopf rahmen">
+      <a class="zurueck" href={`/${bereich.id}/`}><span class="nur-sr">Zurück zu </span>{bereich.data.titel}</a>
+      <h1 class="beitrag-titel">{titel}</h1>
+      {tags.length > 0 && <p class="tags">{tags.join(', ')}</p>}
+      <dl class="fakten">
+        {
+          status && (
+            <div>
+              <dt>Status</dt>
+              <dd class={status}>
+                <span class="status-punkt" />
+                {STATUS[status]}
+              </dd>
+            </div>
+          )
+        }
+        {
+          zeitraum && (
+            <div>
+              <dt>Zeitraum</dt>
+              <dd>{zeitraum}</dd>
+            </div>
+          )
+        }
+        <div>
+          <dt>Bereich</dt>
+          <dd>{bereich.data.titel}</dd>
+        </div>
+        {
+          orte.length > 0 && (
+            <div>
+              <dt>Auf der Brixmap</dt>
+              <dd class="orte">
+                {orte.map((ort, i) => (
+                  <a href={`/brixmap/?ort=${beitragsOrtId(beitrag.id, i)}`}>{ort.name}</a>
+                ))}
+              </dd>
+            </div>
+          )
+        }
+      </dl>
+    </div>
+
+    {
+      titelbild && (
+        <div class="rahmen">
+          <figure class="titelbild">
+            <Foto
+              bild={titelbild}
+              alt={titelbild_alt}
+              breiten={[800, 1200, 1600]}
+              sizes="(max-width: 1408px) 92vw, 1280px"
+              sofort
+            />
+            {bildunterschrift && <figcaption class="bildtext">{bildunterschrift}</figcaption>}
+          </figure>
+        </div>
+      )
+    }
+
+    {
+      (hatStory || mitnehmen || updates.length > 0 || galerie.length > 0) && (
+        <div class="rahmen">
+          <div class="lesen story">
+            {hatStory && (
+              <div class="text">
+                <Content />
+              </div>
+            )}
+
+            {mitnehmen && (
+              <aside class="mitnehmen" aria-label="Zum Mitnehmen">
+                <p class="mitnehmen-titel">
+                  <span class="punkt" aria-hidden="true" />
+                  Zum Mitnehmen
+                </p>
+                <p class="mitnehmen-text">{mitnehmen}</p>
+              </aside>
+            )}
+
+            {updates.length > 0 && (
+              <>
+                <h2 class="zwischentitel">Updates</h2>
+                <ol class="liste updates">
+                  {updates.map((update, i) => (
+                    <li>
+                      <p class="update-datum">
+                        {i === 0 && <span class="neu" aria-hidden="true" />}
+                        <time datetime={isoDatum(update.datum)}>{datum(update.datum)}</time>
+                      </p>
+                      <p class="update-text">{update.text}</p>
+                      {update.bild && (
+                        <Foto
+                          bild={update.bild}
+                          alt={update.bild_alt}
+                          breiten={[680, 1360]}
+                          sizes="(max-width: 760px) 92vw, 680px"
+                          class="update-bild"
+                        />
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              </>
+            )}
+
+            {galerie.length > 0 && (
+              <>
+                <h2 class="zwischentitel">Bilder</h2>
+                <Galerie bilder={galerie} />
+              </>
+            )}
+          </div>
+        </div>
+      )
+    }
+  </article>
+
+  {
+    mehr.length > 0 && (
+      <section class="mehr rahmen" aria-labelledby="mehr-titel">
+        <h2 class="zwischentitel" id="mehr-titel">
+          Mehr aus {bereich.data.titel}
+        </h2>
+        <Projektliste beitraege={mehr} />
+      </section>
+    )
+  }
+</Basis>

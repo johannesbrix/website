@@ -1,0 +1,24 @@
+# Kleiner Server für johannesbrix.com (Cloudflare Worker). Einrichtung: docs/brixmap.md
+name = "johannesbrix-api"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+
+# Nachts abgelaufene Einträge der Missbrauchs-Grenzen löschen
+[triggers]
+crons = ["17 3 * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "johannesbrix"
+# Wird beim Einrichten durch die ID aus `npx wrangler d1 create johannesbrix` ersetzt
+database_id = "00000000-0000-0000-0000-000000000000"
+
+[vars]
+# Nur diese Seiten dürfen zählen und empfehlen
+ERLAUBTE_URSPRUENGE = "https://johannesbrix.com,https://www.johannesbrix.com,http://localhost:4321"
+SEITE = "https://johannesbrix.com"
+
+# Geheimnisse (nicht hier eintragen!):
+#   ADMIN_PASSWORT  Passwort für /admin            npx wrangler secret put ADMIN_PASSWORT
+#   SCHLUESSEL      zufällige lange Zeichenkette   npx wrangler secret put SCHLUESSEL
+# Lokal stehen sie in api/.dev.vars (nicht im Repo).

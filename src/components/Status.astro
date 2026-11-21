@@ -1,0 +1,11 @@
+---
+import { STATUS, type Status } from '../lib/inhalt';
+
+interface Props {
+  status: Status;
+}
+
+const { status } = Astro.props;
+---
+
+<span class:list={['status', status]}><span class="status-punkt"></span>{STATUS[status]}</span>

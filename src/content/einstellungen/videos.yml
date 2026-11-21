@@ -1,0 +1,8 @@
+# Videos für die Seite „Rise and Shine“, auch in Pages CMS unter „Videos“ bearbeitbar.
+# Abgespielt wird erst nach einem Klick (Zwei-Klick-Lösung), vorher lädt nichts von YouTube.
+# geschichte: true = das Video steht direkt unter deiner Geschichte (nur bei einem Video setzen).
+- titel: "Rise and shine - Athlete and Running ultimate motivation"
+  link: https://www.youtube.com/watch?v=SuPLxQD4akQ
+  von: "Even Ødegård"
+  warum: ""
+  geschichte: true

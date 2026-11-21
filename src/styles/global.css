@@ -1,0 +1,507 @@
+/*
+  Globale Styles für johannesbrix.com – Richtung B „Bild“, überarbeitet.
+  Maßgeblich: docs/design.md, visuelle Referenz: docs/referenz/.
+  Komponenten-Styles stehen in den jeweiligen .astro-Dateien.
+*/
+
+/* Schriften: selbst gehostet über Fontsource, nur das Latin-Subset */
+@font-face {
+  font-family: 'Familjen Grotesk';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 700;
+  src: url('@fontsource-variable/familjen-grotesk/files/familjen-grotesk-latin-wght-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Literata';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 900;
+  src: url('@fontsource-variable/literata/files/literata-latin-opsz-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Literata';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 200 900;
+  src: url('@fontsource-variable/literata/files/literata-latin-opsz-italic.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Tokens: hell und dunkel tauschen die Rollen */
+:root {
+  color-scheme: light dark;
+  --grund: #ffffff;
+  --text: #373634;
+  --leise: #6b6965;
+  --linie: #e6e5e2;
+  --flaeche: #f1f1ef;
+  --orange: #fc4c02;
+  --grotesk: 'Familjen Grotesk', 'Helvetica Neue', Arial, sans-serif;
+  --lese: 'Literata', Georgia, serif;
+  --r-gross: 20px;
+  --r: 14px;
+  --r-klein: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --grund: #373634;
+    --text: #f5f5f3;
+    --leise: #c2c0bb;
+    --linie: #4d4c49;
+    --flaeche: #42413e;
+  }
+}
+
+/* Grundlagen */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+  background: var(--grund);
+  color: var(--text);
+  font-family: var(--grotesk);
+  font-size: 17px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+/* Seiten-Container: Bezug für cqi und @container (die fliegende Platte liegt bewusst außerhalb) */
+.seite {
+  container-type: inline-size;
+}
+h1, h2, h3, p, figure, blockquote, dl, dd {
+  margin: 0;
+}
+h1, h2, h3, p {
+  text-wrap: pretty;
+}
+a {
+  color: inherit;
+}
+button {
+  font: inherit;
+  color: inherit;
+}
+img {
+  max-width: 100%;
+}
+picture {
+  display: contents;
+}
+:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 3px;
+}
+a:focus-visible {
+  border-radius: 6px;
+}
+html:has(dialog[open]) {
+  overflow: hidden;
+}
+
+/* Hilfsklassen */
+.rahmen {
+  max-width: 1280px;
+  margin-inline: auto;
+  padding-inline: clamp(20px, 4.4cqi, 64px);
+}
+.punkt {
+  display: inline-block;
+  width: 0.2em;
+  height: 0.2em;
+  border-radius: 50%;
+  background: var(--orange);
+  margin-left: 0.05em;
+}
+.liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.nur-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.skip {
+  position: absolute;
+  left: 16px;
+  top: -200px;
+  z-index: 100;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--grund);
+  font-weight: 600;
+  text-decoration: none;
+}
+.skip:focus {
+  top: 16px;
+}
+
+/* Chips: Filter (Projekte, Brixmap) und Sprungleiste (Rise & Shine) */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid color-mix(in srgb, var(--text) 28%, var(--grund));
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font: 500 15px/1.2 var(--grotesk);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.chip:hover {
+  border-color: var(--text);
+}
+.chip[aria-current],
+.chip[aria-pressed='true'] {
+  border-color: var(--text);
+  background: var(--text);
+  color: var(--grund);
+}
+
+/* Pill-Knöpfe (der einzige orange Knopf bleibt der Klick-Knopf) */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--grund);
+  font: 600 16px/1.2 var(--grotesk);
+  text-decoration: none;
+  cursor: pointer;
+}
+.pill.leise {
+  background: var(--flaeche);
+  color: var(--text);
+}
+.pill:hover {
+  opacity: 0.9;
+}
+.pill:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* Abschnitte und Überschriften */
+.abschnitt {
+  padding-top: clamp(48px, 7cqi, 104px);
+}
+.titel {
+  margin: 0 0 clamp(18px, 2.4cqi, 32px);
+  font-weight: 600;
+  font-size: clamp(24px, 2.4cqi, 32px);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+.zwischentitel {
+  margin: clamp(40px, 6cqi, 72px) 0 18px;
+  font-weight: 600;
+  font-size: clamp(23px, 2.2cqi, 29px);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.lesen {
+  max-width: 680px;
+}
+.platzhalter-text {
+  color: var(--leise);
+}
+
+/* Text aus Markdown (Story, Intro, Rise and Shine, Rechtliches) */
+.text {
+  font-family: var(--lese);
+  font-size: clamp(18px, 1.6cqi, 20px);
+  line-height: 1.65;
+}
+.text p,
+.text ul,
+.text ol,
+.text blockquote {
+  margin: 0 0 1em;
+}
+.text > :last-child {
+  margin-bottom: 0;
+}
+.text h2,
+.text h3 {
+  margin: 1.8em 0 0.5em;
+  font-family: var(--grotesk);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.text h2 {
+  font-size: clamp(23px, 2.2cqi, 29px);
+}
+.text h3 {
+  font-size: 20px;
+}
+.text > :first-child {
+  margin-top: 0;
+}
+.text ul,
+.text ol {
+  padding-left: 1.2em;
+}
+.text li + li {
+  margin-top: 0.3em;
+}
+.text blockquote {
+  padding-left: 1em;
+  border-left: 2px solid var(--linie);
+  font-style: italic;
+}
+.text strong {
+  font-weight: 600;
+}
+.text a {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+.text a:hover {
+  text-decoration-color: var(--orange);
+  text-decoration-thickness: 2px;
+}
+.text hr {
+  margin: 2em 0;
+  border: 0;
+  border-top: 1px solid var(--linie);
+}
+
+/* Bilder: Foto oder ruhige Fläche ohne Text */
+.bild {
+  display: block;
+  background: var(--flaeche);
+  border-radius: var(--r);
+}
+img.bild {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+/* Status: Läuft (orange), Geplant (Ring, leise), Fertig (voll), Pausiert (Ring, leise) */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.status-punkt {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  box-sizing: border-box;
+  border: 1.5px solid currentColor;
+  flex: none;
+}
+.laeuft .status-punkt {
+  background: var(--orange);
+  border-color: var(--orange);
+}
+.fertig .status-punkt {
+  background: currentColor;
+}
+.geplant,
+.pausiert {
+  color: var(--leise);
+}
+
+/* Beitrags- und Momentseite (docs/referenz/beitrag.html) */
+.beitrag-kopf {
+  padding-block: clamp(24px, 5cqi, 80px) clamp(24px, 3cqi, 40px);
+}
+.zurueck {
+  display: inline-block;
+  padding-block: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--leise);
+  text-decoration: none;
+}
+.zurueck:hover {
+  color: var(--text);
+}
+.beitrag-titel {
+  margin-top: 6px;
+  font-weight: 700;
+  font-size: clamp(50px, 8cqi, 116px);
+  line-height: 0.94;
+  letter-spacing: -0.05em;
+}
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  margin-top: 16px;
+  font-size: 16px;
+  color: var(--leise);
+}
+.fakten {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px clamp(28px, 4cqi, 56px);
+  margin-top: clamp(22px, 3cqi, 32px);
+}
+.fakten dt {
+  font-size: 13px;
+  color: var(--leise);
+}
+.fakten dd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.titelbild .bild {
+  aspect-ratio: 3 / 2;
+  border-radius: var(--r-gross);
+}
+.bildtext {
+  margin-top: 10px;
+  font-size: 14px;
+  color: var(--leise);
+}
+.story {
+  padding-top: clamp(32px, 5cqi, 64px);
+}
+.story > .zwischentitel:first-child {
+  margin-top: 0;
+}
+.updates {
+  display: grid;
+  gap: 22px;
+}
+.update-datum {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.update-datum .neu {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--orange);
+}
+.update-text {
+  margin-top: 4px;
+  font-family: var(--lese);
+  font-size: 18px;
+  line-height: 1.55;
+  white-space: pre-line;
+}
+.update-bild {
+  margin-top: 12px;
+}
+.fakten dd.orte {
+  flex-wrap: wrap;
+  gap: 2px 14px;
+}
+.fakten dd.orte a {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+.fakten dd.orte a:hover {
+  text-decoration-color: var(--orange);
+  text-decoration-thickness: 2px;
+}
+/* Zum Mitnehmen: der Gedanke, den der Leser aus dem Beitrag mitnehmen kann */
+.mitnehmen {
+  margin-top: clamp(28px, 4cqi, 44px);
+  padding: clamp(18px, 2.6cqi, 28px);
+  border-radius: var(--r);
+  background: var(--flaeche);
+}
+.mitnehmen-titel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.mitnehmen-titel .punkt {
+  width: 8px;
+  height: 8px;
+  margin: 0;
+}
+.mitnehmen-text {
+  margin-top: 8px;
+  font-family: var(--lese);
+  font-size: clamp(19px, 1.8cqi, 22px);
+  line-height: 1.5;
+}
+.mehr {
+  padding-block: clamp(56px, 8cqi, 104px) clamp(40px, 5cqi, 72px);
+}
+.mehr .zwischentitel {
+  margin-top: 0;
+}
+
+/* Plattenteller: Scheibe mit Rillen, Etikett, Spindel, statischer Glanz.
+   Drehung und Flug steuert src/lib/musik.js. */
+.scheibe {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: repeating-radial-gradient(circle, #171716 0 1.4px, #262624 1.4px 2.8px);
+}
+.etikett {
+  position: absolute;
+  left: 25%;
+  top: 25%;
+  width: 50%;
+  height: 50%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.spindel {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  border-radius: 50%;
+  background: var(--orange);
+}
+.glanz {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 200deg, transparent 0 8%, rgba(255, 255, 255, 0.13) 12%, transparent 18% 58%, rgba(255, 255, 255, 0.08) 62%, transparent 68%);
+  pointer-events: none;
+}

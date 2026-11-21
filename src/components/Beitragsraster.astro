@@ -1,0 +1,92 @@
+---
+// Beiträge als Kartenraster (Bild, Bereich/Status/Datum, Name, Tags), sortiert nach letzter Aktivität.
+// Auf /projekte/ und auf den Bereichsseiten.
+import Foto from './Foto.astro';
+import Status from './Status.astro';
+import { datum, isoDatum, letzteAktivitaet, type Beitrag } from '../lib/inhalt';
+
+interface Props {
+  beitraege: Beitrag[];
+  /** Bereichsnamen nach Slug: zeigt den Bereich in der Meta-Zeile (nur unter „Alle“ sinnvoll) */
+  bereichNamen?: Record<string, string>;
+}
+
+const { beitraege, bereichNamen } = Astro.props;
+---
+
+<ul class="liste karten">
+  {
+    beitraege.map((b) => {
+      const zuletzt = letzteAktivitaet(b);
+      return (
+        <li>
+          <a class="karte" href={`/${b.data.bereich}/${b.id}/`}>
+            <Foto
+              bild={b.data.titelbild}
+              breiten={[300, 600]}
+              sizes="(max-width: 760px) 100vw, (max-width: 1100px) 50vw, 405px"
+            />
+            <span class="karte-meta">
+              {bereichNamen && <span class="karte-bereich">{bereichNamen[b.data.bereich]}</span>}
+              {b.data.status && <Status status={b.data.status} />}
+              <time datetime={isoDatum(zuletzt)}>{datum(zuletzt)}</time>
+            </span>
+            <span class="karte-name">{b.data.titel}</span>
+            {b.data.tags.length > 0 && <span class="karte-tags">{b.data.tags.join(', ')}</span>}
+          </a>
+        </li>
+      );
+    })
+  }
+</ul>
+
+<style>
+  .karten {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+    gap: clamp(30px, 3.6cqi, 48px) clamp(18px, 2.4cqi, 32px);
+  }
+  .karte {
+    display: block;
+    text-decoration: none;
+  }
+  .karte :global(.bild) {
+    aspect-ratio: 4 / 3;
+  }
+  .karte-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 14px;
+    margin-top: 14px;
+    font-size: 14px;
+    color: var(--leise);
+  }
+  .karte-bereich {
+    font-weight: 600;
+    color: var(--text);
+  }
+  .karte-meta :global(.status) {
+    font-size: 14px;
+  }
+  .karte-name {
+    display: block;
+    margin-top: 6px;
+    font-weight: 600;
+    font-size: clamp(20px, 2cqi, 26px);
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+  .karte:hover .karte-name {
+    text-decoration: underline;
+    text-decoration-color: var(--orange);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
+  }
+  .karte-tags {
+    display: block;
+    margin-top: 6px;
+    font-size: 15px;
+    color: var(--leise);
+  }
+</style>

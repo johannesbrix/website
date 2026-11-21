@@ -1,0 +1,31 @@
+---
+// Schlichtes Leselayout für Seiten aus src/content/seiten/ (Impressum, Datenschutz).
+import { render, type CollectionEntry } from 'astro:content';
+
+interface Props {
+  seite: CollectionEntry<'seiten'>;
+}
+
+const { seite } = Astro.props;
+const { Content } = await render(seite);
+---
+
+<article class="rahmen textseite">
+  <h1 class="textseite-titel">{seite.data.titel}</h1>
+  <div class="lesen text">
+    <Content />
+  </div>
+</article>
+
+<style>
+  .textseite {
+    padding-top: clamp(24px, 5cqi, 80px);
+  }
+  .textseite-titel {
+    margin-bottom: clamp(24px, 3cqi, 40px);
+    font-weight: 700;
+    font-size: clamp(44px, 6cqi, 88px);
+    line-height: 0.94;
+    letter-spacing: -0.05em;
+  }
+</style>

@@ -1,0 +1,99 @@
+---
+// Projektliste: „Gerade dran“ auf der Startseite und „Mehr aus …“ auf Beitragsseiten.
+// Bewusst eine Liste (Zeilen), damit sie sich vom Raster der Bereiche abhebt.
+import Foto from './Foto.astro';
+import Status from './Status.astro';
+import type { Beitrag } from '../lib/inhalt';
+
+interface Props {
+  beitraege: Beitrag[];
+  /** Bereichsnamen nach Slug. Ohne diese Angabe entfällt der Bereich in der Zeile („Mehr aus …“). */
+  bereichNamen?: Record<string, string>;
+}
+
+const { beitraege, bereichNamen } = Astro.props;
+---
+
+<ul class="liste projekte">
+  {
+    beitraege.map((beitrag) => {
+      const { titel, bereich, tags, status, titelbild } = beitrag.data;
+      return (
+        <li>
+          <a class="projekt" href={`/${bereich}/${beitrag.id}/`}>
+            <Foto bild={titelbild} breiten={[160, 320]} sizes="(max-width: 760px) 104px, 148px" />
+            <span>
+              <span class="projekt-name">{titel}</span>
+              {(bereichNamen || tags.length > 0) && (
+                <span class="projekt-zeile">
+                  {bereichNamen && <span class="projekt-bereich">{bereichNamen[bereich]}</span>}
+                  {tags.length > 0 && <span class="projekt-tags">{tags.join(', ')}</span>}
+                </span>
+              )}
+            </span>
+            {status && <Status status={status} />}
+          </a>
+        </li>
+      );
+    })
+  }
+</ul>
+
+<style>
+  .projekte {
+    display: grid;
+    gap: clamp(14px, 1.8cqi, 22px);
+  }
+  .projekt {
+    display: grid;
+    grid-template-columns: 148px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: clamp(16px, 2.4cqi, 36px);
+    max-width: 1000px;
+    text-decoration: none;
+  }
+  .projekt :global(.bild) {
+    aspect-ratio: 4 / 3;
+    border-radius: 12px;
+  }
+  .projekt-name {
+    display: block;
+    font-weight: 600;
+    font-size: clamp(20px, 2cqi, 26px);
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+  .projekt-zeile {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 12px;
+    margin-top: 5px;
+    font-size: 15px;
+  }
+  .projekt-bereich {
+    font-weight: 500;
+  }
+  .projekt-tags {
+    color: var(--leise);
+  }
+  .projekt:hover .projekt-name {
+    text-decoration: underline;
+    text-decoration-color: var(--orange);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
+  }
+  @container (max-width: 760px) {
+    .projekt {
+      grid-template-columns: 104px minmax(0, 1fr);
+      row-gap: 6px;
+      align-items: start;
+    }
+    .projekt :global(.bild) {
+      grid-row: span 2;
+      border-radius: 10px;
+    }
+    .projekt :global(.status) {
+      grid-column: 2;
+    }
+  }
+</style>

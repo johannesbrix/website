@@ -1,0 +1,7 @@
+# Bücher für die Seite „Rise and Shine“, auch in Pages CMS unter „Bücher“ bearbeitbar.
+# Felder: titel, autor, mitgenommen (1–2 Sätze), foto (am besten ein eigenes Foto deines Exemplars), foto_alt, link
+# Beispiel:
+# - titel: "Titel des Buchs"
+#   autor: "Name"
+#   mitgenommen: "Was ich mitgenommen habe."
+[]

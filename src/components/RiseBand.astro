@@ -1,0 +1,290 @@
+---
+// Rise-and-Shine-Band (invertiert) mit Motto, Text, Klick-Knopf, Zähler und Zitat.
+// Auf der Startseite als h2, auf /rise-and-shine/ als h1 ganz oben.
+import { einstellungen, zitate } from '../lib/inhalt';
+import { API } from '../lib/dienste';
+
+interface Props {
+  ebene?: 'h1' | 'h2';
+  /** Ganz oben auf der Seite: ohne Abstand zur Kopfzeile. */
+  oben?: boolean;
+}
+
+const { ebene = 'h2', oben = false } = Astro.props;
+const Titel = ebene;
+const site = await einstellungen();
+const liste = (await zitate()).map(({ text, von }) => ({ text, von }));
+---
+
+<section class:list={['band', { oben }]} aria-labelledby="rise-titel">
+  <div class="rahmen">
+    <Titel class="rise-titel" id="rise-titel">{site.motto ?? 'Rise and Shine'}<span class="punkt" aria-hidden="true"></span></Titel>
+    {site.motto_text && <p class="rise-text">{site.motto_text}</p>}
+    {
+      site.klick.knopf && (
+        <div data-klick data-zitate={JSON.stringify(liste)} data-api={API || undefined}>
+          <div class="klick">
+            <button class="knopf" type="button" data-klick-knopf>{site.klick.knopf}</button>
+            <p class="zaehler" aria-live="polite">
+              <span data-klick-zahl>0</span>×{site.klick.zaehler && ` ${site.klick.zaehler}`}
+            </p>
+          </div>
+          {liste.length > 0 && (
+            <div class="zitat-rahmen">
+              {/* Alle Zitate unsichtbar übereinander: Der Rahmen ist so hoch wie das längste, nichts springt. */}
+              <div class="zitat-mass" aria-hidden="true">
+                {liste.map((zitat) => (
+                  <figure class="zitat">
+                    <blockquote class="zitat-text">„{zitat.text}“</blockquote>
+                    {zitat.von && <figcaption class="zitat-quelle">{zitat.von}</figcaption>}
+                  </figure>
+                ))}
+              </div>
+              <div class="zitat-ort" aria-live="polite" data-klick-zitat />
+            </div>
+          )}
+        </div>
+      )
+    }
+  </div>
+</section>
+
+<style>
+  .band {
+    margin-top: clamp(72px, 10cqi, 144px);
+    background: var(--text);
+    color: var(--grund);
+  }
+  .band.oben {
+    margin-top: 0;
+  }
+  .band .rahmen {
+    padding-block: clamp(64px, 9cqi, 128px);
+  }
+  .rise-titel {
+    font-weight: 700;
+    font-size: clamp(58px, 10.5cqi, 168px);
+    line-height: 0.92;
+    letter-spacing: -0.05em;
+  }
+  .rise-text {
+    margin-top: clamp(20px, 2.4cqi, 32px);
+    max-width: 36em;
+    font-family: var(--lese);
+    font-size: clamp(19px, 1.8cqi, 23px);
+    line-height: 1.55;
+    opacity: 0.88;
+  }
+  .klick {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px 24px;
+    margin-top: clamp(30px, 3.6cqi, 48px);
+  }
+  .knopf {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    min-height: 58px;
+    padding: 14px 28px;
+    border: 0;
+    border-radius: 29px;
+    background: var(--orange);
+    color: #ffffff;
+    font: 700 19px/1.25 var(--grotesk);
+    letter-spacing: -0.01em;
+    text-align: left;
+    cursor: pointer;
+  }
+  .knopf:hover {
+    filter: brightness(1.07);
+  }
+  .knopf:active {
+    transform: scale(0.98);
+  }
+  .zaehler {
+    font-size: 17px;
+    font-weight: 500;
+    opacity: 0.88;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Fester Platz für das Zitat: so hoch wie das längste Zitat, damit beim Klicken nichts springt */
+  .zitat-rahmen {
+    display: grid;
+    margin-top: clamp(26px, 3cqi, 40px);
+    max-width: 34em;
+  }
+  .zitat-mass,
+  .zitat-ort {
+    grid-area: 1 / 1;
+  }
+  .zitat-mass {
+    display: grid;
+    visibility: hidden;
+  }
+  /* Ausmessen in der aufrechten Literata, die ohnehin geladen ist: Sie läuft etwas breiter als die
+     kursive, der Platz reicht also. Die kursive Schrift lädt erst beim ersten Zitat. */
+  .band .zitat-mass :global(.zitat-text) {
+    font-style: normal;
+  }
+  .zitat-mass > .zitat {
+    grid-area: 1 / 1;
+  }
+  /* Das angezeigte Zitat setzt das Skript ein, deshalb :global */
+  .zitat-ort :global(.zitat) {
+    animation: zitat-ein 0.35s ease both;
+  }
+  @keyframes zitat-ein {
+    from {
+      opacity: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .zitat-ort :global(.zitat) {
+      animation: none;
+    }
+  }
+  .band :global(.zitat-text) {
+    font-family: var(--lese);
+    font-style: italic;
+    font-size: clamp(20px, 2cqi, 26px);
+    line-height: 1.4;
+    text-wrap: balance;
+  }
+  .band :global(.zitat-quelle) {
+    margin-top: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 0.75;
+  }
+</style>
+
+<script>
+  // Klick-Zähler: Mit Server (data-api) zählt er alle Klicks aller Besucher. Der Knopf reagiert sofort,
+  // die Klicks gehen gebündelt an den Server, der Auto-Klicker begrenzt (api/src/index.js).
+  // Ohne Server zählt er nur die Klicks dieses Besuchers.
+  // Die eigenen Klicks (localStorage, mit try/catch) bestimmen das Zitat: jeder Klick zeigt das nächste
+  // aus zitate.yml, der Reihe nach; vor dem ersten Klick keins.
+  type Zitat = { text: string; von?: string };
+  type Zaehler = { api: string; server: number | null; offen: number; unterwegs: boolean; timer: number };
+  const SCHLUESSEL = 'klicks';
+  const BUENDEL_MS = 700;
+  const HOECHSTENS = 10; // Klicks pro Anfrage, so viele nimmt der Server auf einmal an
+  const w = window as Window & { __jbKlick?: boolean; __jbKlicks?: number; __jbZaehler?: Zaehler };
+
+  function zaehler(api: string): Zaehler {
+    if (!w.__jbZaehler || w.__jbZaehler.api !== api) {
+      w.__jbZaehler = { api, server: null, offen: 0, unterwegs: false, timer: 0 };
+    }
+    return w.__jbZaehler;
+  }
+
+  // Zeigt die Zahl in allen Zählern der aktuellen Seite
+  function anzeigen() {
+    const z = w.__jbZaehler;
+    const wert = z && z.api && z.server !== null ? z.server + z.offen : stand();
+    document.querySelectorAll('[data-klick-zahl]').forEach((el) => (el.textContent = wert.toLocaleString('de-DE')));
+  }
+
+  async function laden(z: Zaehler) {
+    try {
+      const antwort = await fetch(`${z.api}/klicks`);
+      if (antwort.ok) z.server = (await antwort.json()).wert;
+    } catch {}
+    anzeigen();
+  }
+
+  async function senden(z: Zaehler) {
+    z.timer = 0;
+    if (z.unterwegs || z.offen === 0) return;
+    const anzahl = Math.min(z.offen, HOECHSTENS);
+    z.unterwegs = true;
+    try {
+      const antwort = await fetch(`${z.api}/klicks`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ anzahl }),
+      });
+      if (antwort.ok) z.server = (await antwort.json()).wert;
+    } catch {}
+    z.offen -= anzahl; // auch was der Server nicht gezählt hat, fällt weg
+    z.unterwegs = false;
+    anzeigen();
+    if (z.offen > 0) planen(z);
+  }
+
+  function planen(z: Zaehler) {
+    if (!z.timer) z.timer = window.setTimeout(() => senden(z), BUENDEL_MS);
+  }
+
+  function stand(): number {
+    if (w.__jbKlicks === undefined) {
+      try {
+        w.__jbKlicks = parseInt(localStorage.getItem(SCHLUESSEL) || '0', 10) || 0;
+      } catch {
+        w.__jbKlicks = 0;
+      }
+    }
+    return w.__jbKlicks;
+  }
+
+  function zitatZeigen(ort: Element, zitat: Zitat) {
+    const figur = document.createElement('figure');
+    figur.className = 'zitat';
+    const text = document.createElement('blockquote');
+    text.className = 'zitat-text';
+    text.textContent = `„${zitat.text}“`;
+    figur.append(text);
+    if (zitat.von) {
+      const von = document.createElement('figcaption');
+      von.className = 'zitat-quelle';
+      von.textContent = zitat.von;
+      figur.append(von);
+    }
+    ort.replaceChildren(figur);
+  }
+
+  function klickEinrichten() {
+    for (const box of document.querySelectorAll<HTMLElement>('[data-klick]')) {
+      if (box.dataset.bereit !== undefined) continue;
+      box.dataset.bereit = '';
+      const knopf = box.querySelector('[data-klick-knopf]');
+      const zahl = box.querySelector('[data-klick-zahl]');
+      const ort = box.querySelector('[data-klick-zitat]');
+      const zitate: Zitat[] = JSON.parse(box.dataset.zitate || '[]');
+      const api = box.dataset.api || '';
+      if (!knopf || !zahl || !ort) continue;
+      const z = api ? zaehler(api) : null;
+      anzeigen();
+      if (z) laden(z);
+      knopf.addEventListener('click', () => {
+        const n = stand() + 1;
+        w.__jbKlicks = n;
+        try {
+          localStorage.setItem(SCHLUESSEL, String(n));
+        } catch {}
+        if (z) {
+          z.offen++;
+          planen(z);
+        }
+        anzeigen();
+        if (zitate.length) zitatZeigen(ort, zitate[(n - 1) % zitate.length]);
+      });
+    }
+  }
+
+  if (!w.__jbKlick) {
+    w.__jbKlick = true;
+    document.addEventListener('astro:page-load', klickEinrichten);
+    // Wer die Seite direkt nach dem Klicken schließt: offene Klicks noch losschicken
+    window.addEventListener('pagehide', () => {
+      const z = w.__jbZaehler;
+      if (z && z.api && z.offen > 0 && navigator.sendBeacon) {
+        navigator.sendBeacon(`${z.api}/klicks`, JSON.stringify({ anzahl: Math.min(z.offen, HOECHSTENS) }));
+        z.offen = 0;
+      }
+    });
+  }
+  klickEinrichten();
+</script>

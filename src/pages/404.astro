@@ -1,0 +1,35 @@
+---
+import Basis from '../layouts/Basis.astro';
+---
+
+<Basis titel="Diese Seite gibt es nicht" noindex>
+  <div class="rahmen fehler">
+    <h1 class="fehler-titel">Diese Seite gibt es nicht.</h1>
+    <p class="fehler-link"><a href="/">Zur Startseite</a></p>
+  </div>
+</Basis>
+
+<style>
+  .fehler {
+    padding-top: clamp(32px, 6cqi, 96px);
+  }
+  .fehler-titel {
+    max-width: 12em;
+    font-weight: 700;
+    font-size: clamp(44px, 6cqi, 88px);
+    line-height: 0.94;
+    letter-spacing: -0.05em;
+  }
+  .fehler-link {
+    margin-top: clamp(24px, 3cqi, 40px);
+    font-size: 19px;
+    font-weight: 600;
+  }
+  .fehler-link a {
+    text-decoration-thickness: 2px;
+    text-underline-offset: 5px;
+  }
+  .fehler-link a:hover {
+    text-decoration-color: var(--orange);
+  }
+</style>

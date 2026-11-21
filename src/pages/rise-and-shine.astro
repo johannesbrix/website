@@ -1,0 +1,213 @@
+---
+// Rise & Shine: alles, was motiviert. Oben das Band mit Klick-Knopf, dann Johannes' Geschichte
+// mit dem Video, das alles angestoßen hat, die Zitate, weitere Videos und Bücher.
+// Eine Sprungleiste führt zu den Abschnitten; leere Abschnitte erscheinen nicht.
+import { getEntry, render } from 'astro:content';
+import Basis from '../layouts/Basis.astro';
+import RiseBand from '../components/RiseBand.astro';
+import Video from '../components/Video.astro';
+import Foto from '../components/Foto.astro';
+import { buecher, einstellungen, videos, zitate } from '../lib/inhalt';
+
+const site = await einstellungen();
+const seite = await getEntry('seiten', 'rise-and-shine');
+const Geschichte = seite?.body?.trim() ? (await render(seite)).Content : undefined;
+const alleVideos = await videos();
+const hauptvideo = alleVideos.find((v) => v.geschichte);
+const weitereVideos = alleVideos.filter((v) => v !== hauptvideo);
+const zitatListe = await zitate();
+const buchListe = await buecher();
+
+const abschnitte = [
+  { id: 'geschichte', name: 'Geschichte', da: Boolean(Geschichte || hauptvideo) },
+  { id: 'zitate', name: 'Zitate', da: zitatListe.length > 0 },
+  { id: 'videos', name: 'Videos', da: weitereVideos.length > 0 },
+  { id: 'buecher', name: 'Bücher', da: buchListe.length > 0 },
+].filter((a) => a.da);
+---
+
+<Basis titel={seite?.data.titel ?? site.motto ?? 'Rise and Shine'} beschreibung={site.motto_text}>
+  <RiseBand ebene="h1" oben />
+
+  {
+    abschnitte.length > 1 && (
+      <nav class="rahmen sprung" aria-label="Auf dieser Seite">
+        <ul class="chips">
+          {abschnitte.map((a) => (
+            <li>
+              <a class="chip" href={`#${a.id}`}>
+                {a.name}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    )
+  }
+
+  {
+    (Geschichte || hauptvideo) && (
+      <section class="rahmen abschnitt" id="geschichte" aria-labelledby="geschichte-titel">
+        <h2 class="titel" id="geschichte-titel">
+          Warum Rise and Shine
+        </h2>
+        <div class:list={['geschichte', { 'mit-video': Geschichte && hauptvideo }]}>
+          {Geschichte && (
+            <div class="lesen text motto-text">
+              <Geschichte />
+            </div>
+          )}
+          {hauptvideo && (
+            <Video titel={hauptvideo.titel} id={hauptvideo.link} von={hauptvideo.von} warum={hauptvideo.warum} gross />
+          )}
+        </div>
+      </section>
+    )
+  }
+
+  {
+    zitatListe.length > 0 && (
+      <section class="rahmen abschnitt" id="zitate" aria-labelledby="zitate-titel">
+        <h2 class="titel" id="zitate-titel">
+          Zitate
+        </h2>
+        <ul class="liste zitate">
+          {zitatListe.map((zitat) => (
+            <li>
+              <figure>
+                <blockquote class="zitat">„{zitat.text}“</blockquote>
+                {(zitat.von || zitat.quelle) && (
+                  <figcaption class="quelle">{[zitat.von, zitat.quelle].filter(Boolean).join(', ')}</figcaption>
+                )}
+              </figure>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+
+  {
+    weitereVideos.length > 0 && (
+      <section class="rahmen abschnitt" id="videos" aria-labelledby="videos-titel">
+        <h2 class="titel" id="videos-titel">
+          Videos
+        </h2>
+        <div class="video-raster">
+          {weitereVideos.map((v) => (
+            <Video titel={v.titel} id={v.link} von={v.von} warum={v.warum} />
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  {
+    buchListe.length > 0 && (
+      <section class="rahmen abschnitt" id="buecher" aria-labelledby="buecher-titel">
+        <h2 class="titel" id="buecher-titel">
+          Bücher
+        </h2>
+        <ul class="liste buecher">
+          {buchListe.map((buch) => (
+            <li class="buch">
+              {buch.foto && (
+                <Foto bild={buch.foto} alt={buch.foto_alt} breiten={[200, 400]} sizes="120px" class="buch-foto" />
+              )}
+              <div>
+                <p class="buch-titel">{buch.link ? <a href={buch.link}>{buch.titel}</a> : buch.titel}</p>
+                {buch.autor && <p class="buch-autor">{buch.autor}</p>}
+                {buch.mitgenommen && <p class="buch-text">{buch.mitgenommen}</p>}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+</Basis>
+
+<style>
+  .sprung {
+    padding-top: clamp(24px, 4cqi, 48px);
+  }
+  .geschichte.mit-video {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    gap: clamp(28px, 5cqi, 72px);
+    align-items: center;
+  }
+  .motto-text {
+    font-size: clamp(19px, 1.8cqi, 23px);
+    line-height: 1.55;
+  }
+  .zitate {
+    display: grid;
+    gap: clamp(44px, 6cqi, 80px);
+    max-width: 760px;
+  }
+  .zitat {
+    font-family: var(--lese);
+    font-size: clamp(24px, 2.4cqi, 30px);
+    line-height: 1.35;
+    text-wrap: balance;
+  }
+  .quelle {
+    margin-top: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--leise);
+  }
+  .video-raster {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
+    gap: clamp(28px, 3.6cqi, 48px) clamp(18px, 2.4cqi, 32px);
+  }
+  .buecher {
+    display: grid;
+    gap: clamp(28px, 3.6cqi, 40px);
+    max-width: 760px;
+  }
+  .buch {
+    display: flex;
+    gap: clamp(16px, 2.4cqi, 28px);
+    align-items: flex-start;
+  }
+  .buch :global(.buch-foto) {
+    flex: none;
+    width: clamp(84px, 9cqi, 120px);
+    aspect-ratio: 3 / 4;
+    border-radius: var(--r-klein);
+  }
+  .buch-titel {
+    font-weight: 600;
+    font-size: clamp(20px, 2cqi, 26px);
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+  .buch-titel a {
+    text-decoration: none;
+  }
+  .buch-titel a:hover {
+    text-decoration: underline;
+    text-decoration-color: var(--orange);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
+  }
+  .buch-autor {
+    margin-top: 4px;
+    font-size: 15px;
+    color: var(--leise);
+  }
+  .buch-text {
+    margin-top: 10px;
+    font-family: var(--lese);
+    font-size: 18px;
+    line-height: 1.55;
+  }
+  @container (max-width: 760px) {
+    .geschichte.mit-video {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

@@ -1,0 +1,34 @@
+---
+// Filter für Projekte: „Alle“ plus die vier Bereiche. Jeder Filter ist eine eigene Seite
+// (/projekte/, /gourmet/ …). Das funktioniert ohne JavaScript, und jeder Filter lässt sich teilen.
+import { bereiche } from '../lib/inhalt';
+
+interface Props {
+  /** Slug des aktiven Bereichs; leer heißt „Alle“ */
+  aktiv?: string;
+}
+
+const { aktiv } = Astro.props;
+const liste = await bereiche();
+---
+
+<nav class="bereichsfilter rahmen" aria-label="Projekte nach Bereich filtern">
+  <ul class="chips">
+    <li><a class="chip" href="/projekte/" aria-current={aktiv ? undefined : 'page'}>Alle</a></li>
+    {
+      liste.map((b) => (
+        <li>
+          <a class="chip" href={`/${b.id}/`} aria-current={aktiv === b.id ? 'page' : undefined}>
+            {b.data.navtitel ?? b.data.titel}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</nav>
+
+<style>
+  .bereichsfilter {
+    padding-top: clamp(16px, 3cqi, 40px);
+  }
+</style>

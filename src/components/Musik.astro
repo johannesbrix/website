@@ -1,0 +1,102 @@
+---
+// Song und fliegende Platte. Sitzt im Basis-Layout direkt nach dem Skip-Link und bleibt
+// beim Seitenwechsel erhalten (transition:persist), damit die Musik weiterläuft.
+// Die Logik steckt fertig in src/lib/musik.js.
+import { Image } from 'astro:assets';
+import gesicht from '../assets/bilder/johannes-gesicht.jpg';
+import type { Einstellungen } from '../lib/inhalt';
+
+interface Props {
+  song: Einstellungen['plattenteller'];
+}
+
+const { song } = Astro.props;
+---
+
+{
+  song.datei && (
+    <div transition:persist="musik">
+      <audio data-song src={song.datei} data-titel={song.titel} data-interpret={song.interpret} loop preload="none" />
+      {song.fliegende_platte && (
+        <button class="flieger" type="button" aria-label="Platte und Musik anhalten" data-flieger>
+          <span class="scheibe">
+            <Image class="etikett" src={gesicht} alt="" width={132} height={132} loading="eager" />
+            <span class="spindel" />
+          </span>
+          <span class="glanz" />
+        </button>
+      )}
+      {song.fliegende_platte && (
+        <button class="flieger-weg" type="button" data-flieger-weg hidden>
+          Ausblenden
+        </button>
+      )}
+    </div>
+  )
+}
+
+<style>
+  /* Liegt außerhalb von .seite, damit position: fixed sich auf das Fenster bezieht.
+     z-index unter dem Handymenü (das als modaler Dialog ohnehin ganz oben liegt). */
+  .flieger {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 50;
+    width: 64px;
+    height: 64px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: #1b1b1a;
+    cursor: pointer;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+    opacity: 0;
+    transition: opacity 0.4s;
+    will-change: transform;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .flieger.bereit {
+    opacity: 1;
+  }
+  .flieger[hidden] {
+    display: none;
+  }
+  .flieger .spindel {
+    width: 6px;
+    height: 6px;
+    margin: -3px 0 0 -3px;
+  }
+  /* Erscheint neben der angehaltenen Platte; musik.js setzt die Position */
+  .flieger-weg {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 50;
+    min-height: 40px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--text);
+    color: var(--grund);
+    font: 600 14px var(--grotesk);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .flieger-weg[hidden] {
+    display: none;
+  }
+  @media (max-width: 760px) {
+    .flieger {
+      width: 52px;
+      height: 52px;
+    }
+  }
+  @media print {
+    .flieger,
+    .flieger-weg {
+      display: none;
+    }
+  }
+</style>

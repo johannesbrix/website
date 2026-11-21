@@ -1,0 +1,439 @@
+# Pages CMS – Redaktionsoberfläche für johannesbrix.com
+# Anmelden: https://app.pagescms.org mit GitHub → dieses Repository → Branch main.
+# Doku: https://pagescms.org/docs/  (Phase 7 im Bauplan prüft diese Datei gegen die aktuelle Doku.)
+
+media:
+  - name: bilder
+    label: Bilder
+    input: src/assets/bilder
+    output: ../../assets/bilder      # relativ zu src/content/<sammlung>/<datei>.md
+    extensions: [jpg, jpeg, png, webp] # kein HEIC: das kann der Build nicht verarbeiten
+    rename: safe
+  - name: musik
+    label: Musik
+    input: public/musik
+    output: /musik
+    categories: [audio]
+    rename: safe
+
+content:
+  - name: beitraege
+    label: Beiträge & Projekte
+    type: collection
+    path: src/content/beitraege
+    filename: "{primary}.md"
+    view:
+      fields: [titel, bereich, status, datum]
+      primary: titel
+      sort: [datum, titel]
+      default:
+        sort: datum
+        order: desc
+    fields:
+      - name: titel
+        label: Titel
+        type: string
+        required: true
+      - name: datum
+        label: Datum
+        type: date
+        required: true
+        options:
+          format: yyyy-MM-dd
+      - name: bereich
+        label: Bereich
+        type: select
+        required: true
+        options:
+          values:
+            - { name: gourmet, label: Gourmet }
+            - { name: bauen, label: Bauen }
+            - { name: sport, label: Sport }
+            - { name: menschen, label: "Menschen & Community" }
+      - name: tags
+        label: Tags
+        type: string
+        list: true
+      - name: status
+        label: Status (nur bei Projekten)
+        type: select
+        options:
+          values:
+            - { name: geplant, label: Geplant }
+            - { name: laeuft, label: Läuft }
+            - { name: fertig, label: Fertig }
+            - { name: pausiert, label: Pausiert }
+      - name: zeitraum
+        label: Zeitraum (z. B. „seit Oktober 2026“)
+        type: string
+      - name: aktiv
+        label: Auf der Startseite unter „Gerade dran“ zeigen
+        type: boolean
+        default: false
+      - name: titelbild
+        label: Titelbild
+        type: image
+        options:
+          media: bilder
+      - name: titelbild_alt
+        label: Bildbeschreibung (Was ist zu sehen?)
+        type: string
+      - name: bildunterschrift
+        label: Bildunterschrift (optional)
+        type: string
+      - name: body
+        label: Story
+        type: rich-text
+        options:
+          format: markdown
+          media: false
+      - name: mitnehmen
+        label: Zum Mitnehmen
+        description: 1–2 Sätze, was der Leser aus dem Beitrag für sich mitnehmen kann. Steht hervorgehoben unter der Story.
+        type: text
+      - name: orte
+        label: Orte (erscheinen mit ☀️ auf der Brixmap)
+        type: object
+        list: true
+        fields:
+          - name: name
+            label: Name des Orts
+            type: string
+            required: true
+          - name: koordinaten
+            label: Koordinaten
+            description: "So: 48.13743, 11.57549 – in Google Maps per Rechtsklick (am Handy: lange auf den Ort tippen) kopieren."
+            type: string
+            required: true
+          - name: notiz
+            label: Notiz für die Karte (optional)
+            type: text
+      - name: updates
+        label: Updates (Bautagebuch)
+        type: object
+        list: true
+        fields:
+          - name: datum
+            label: Datum
+            type: date
+            options:
+              format: yyyy-MM-dd
+          - name: text
+            label: Was ist passiert?
+            type: text
+          - name: bild
+            label: Bild (optional)
+            type: image
+            options:
+              media: bilder
+          - name: bild_alt
+            label: Bildbeschreibung
+            type: string
+      - name: galerie
+        label: Galerie
+        type: object
+        list: true
+        fields:
+          - name: bild
+            label: Bild
+            type: image
+            options:
+              media: bilder
+          - name: alt
+            label: Bildbeschreibung
+            type: string
+      - name: entwurf
+        label: Entwurf (nicht veröffentlichen)
+        type: boolean
+        default: false
+
+  - name: momente
+    label: Momente
+    type: collection
+    path: src/content/momente
+    filename: "{primary}.md"
+    view:
+      fields: [titel, datum]
+      primary: titel
+      sort: [datum, titel]
+      default:
+        sort: datum
+        order: desc
+    fields:
+      - name: titel
+        label: Titel
+        type: string
+        required: true
+      - name: datum
+        label: Wann ist es passiert?
+        type: date
+        required: true
+        options:
+          format: yyyy-MM-dd
+      - name: ort
+        label: Ort (grob, z. B. Stadt – nie eine Adresse)
+        type: string
+      - name: bild
+        label: Bild (optional)
+        type: image
+        options:
+          media: bilder
+      - name: bild_alt
+        label: Bildbeschreibung
+        type: string
+      - name: body
+        label: Geschichte
+        type: rich-text
+        options:
+          format: markdown
+          media: false
+      - name: entwurf
+        label: Entwurf (nicht veröffentlichen)
+        type: boolean
+        default: false
+
+  - name: bereiche
+    label: Bereiche
+    type: collection
+    path: src/content/bereiche
+    # Die vier Bereiche sind fest (Slugs = URLs), deshalb nur bearbeiten
+    operations:
+      create: false
+      rename: false
+      delete: false
+    view:
+      fields: [titel, reihenfolge]
+      primary: titel
+      sort: [reihenfolge]
+    fields:
+      - name: titel
+        label: Name
+        type: string
+        required: true
+      - name: navtitel
+        label: Kurzname für die Navigation
+        type: string
+      - name: reihenfolge
+        label: Reihenfolge
+        type: number
+        required: true
+      - name: untertitel
+        label: Untertitel (Kachel auf der Startseite und Bereichsseite)
+        type: string
+      - name: bild
+        label: Foto
+        type: image
+        options:
+          media: bilder
+      - name: bild_alt
+        label: Bildbeschreibung
+        type: string
+      - name: body
+        label: Intro (2–4 Sätze)
+        type: rich-text
+        options:
+          format: markdown
+          media: false
+
+  - name: seiten
+    label: Seiten (Rise & Shine, Brixmap, Impressum, Datenschutz)
+    type: collection
+    path: src/content/seiten
+    # Rise & Shine, Brixmap, Impressum und Datenschutz sind feste Seiten, deshalb nur bearbeiten
+    operations:
+      create: false
+      rename: false
+      delete: false
+    view:
+      fields: [titel]
+      primary: titel
+    fields:
+      - name: titel
+        label: Titel
+        type: string
+        required: true
+      - name: body
+        label: Text
+        type: rich-text
+        options:
+          format: markdown
+          media: false
+
+  - name: zitate
+    label: Zitate
+    type: file
+    path: src/content/einstellungen/zitate.yml
+    format: yaml
+    list: true
+    operations:
+      delete: false
+    fields:
+      - name: text
+        label: Zitat
+        description: Kurz halten, etwa bis 60 Zeichen. Das längste Zitat bestimmt die Höhe des Zitatfelds unter dem Klick-Knopf.
+        type: text
+        required: true
+      - name: von
+        label: Von
+        type: string
+      - name: quelle
+        label: Quelle
+        type: string
+
+  - name: videos
+    label: Videos (Rise & Shine)
+    type: file
+    path: src/content/einstellungen/videos.yml
+    format: yaml
+    list: true
+    operations:
+      delete: false
+    fields:
+      - name: titel
+        label: Titel
+        type: string
+        required: true
+      - name: link
+        label: YouTube-Link
+        type: string
+        required: true
+      - name: von
+        label: Kanal
+        type: string
+      - name: warum
+        label: Warum es dich bewegt (optional)
+        type: text
+      - name: geschichte
+        label: Unter meiner Geschichte zeigen (nur bei einem Video)
+        type: boolean
+        default: false
+
+  - name: buecher
+    label: Bücher (Rise & Shine)
+    type: file
+    path: src/content/einstellungen/buecher.yml
+    format: yaml
+    list: true
+    operations:
+      delete: false
+    fields:
+      - name: titel
+        label: Titel
+        type: string
+        required: true
+      - name: autor
+        label: Autor
+        type: string
+      - name: mitgenommen
+        label: Was ich mitgenommen habe (1–2 Sätze)
+        type: text
+      - name: foto
+        label: Foto (am besten dein eigenes Exemplar)
+        type: image
+        options:
+          media: bilder
+      - name: foto_alt
+        label: Bildbeschreibung
+        type: string
+      - name: link
+        label: Link (optional)
+        type: string
+
+  - name: orte
+    label: Meine Orte (Brixmap)
+    type: file
+    path: src/content/einstellungen/orte.yml
+    format: yaml
+    list: true
+    operations:
+      delete: false
+    fields:
+      - name: name
+        label: Name des Orts
+        type: string
+        required: true
+      - name: kategorie
+        label: Was ist es?
+        type: select
+        options:
+          values:
+            - { name: essen, label: "Essen & Trinken" }
+            - { name: hidden-spot, label: Hidden Spot }
+            - { name: treffpunkt, label: Treffpunkt }
+            - { name: sonstiges, label: Sonstiges }
+      - name: koordinaten
+        label: Koordinaten
+        description: "So: 48.13743, 11.57549 – in Google Maps per Rechtsklick (am Handy: lange auf den Ort tippen) kopieren."
+        type: string
+        required: true
+      - name: notiz
+        label: Notiz
+        type: text
+      - name: link
+        label: Link (optional, z. B. zu einem Beitrag oder zur Website des Orts)
+        type: string
+
+  - name: einstellungen
+    label: Einstellungen
+    type: file
+    path: src/content/einstellungen/site.yml
+    format: yaml
+    operations:
+      delete: false
+    fields:
+      - name: name
+        label: Name
+        type: string
+        required: true
+      - name: beschreibung
+        label: Kurzbeschreibung für Google & Link-Vorschau (max. 155 Zeichen)
+        type: text
+      - name: intro
+        label: Intro-Satz auf der Startseite
+        type: text
+        required: true
+      - name: portrait
+        label: Porträt
+        type: image
+        options:
+          media: bilder
+      - name: portrait_alt
+        label: Bildbeschreibung Porträt
+        type: string
+      - name: motto
+        label: Motto
+        type: string
+      - name: motto_text
+        label: Text unter „Rise and Shine“
+        type: text
+      - name: links
+        label: Links
+        type: object
+        fields:
+          - { name: instagram, label: Instagram, type: string }
+          - { name: strava, label: Strava, type: string }
+          - { name: substack, label: Substack (Blog), type: string }
+          - { name: linkedin, label: LinkedIn (Lebenslauf), type: string }
+      - name: plattenteller
+        label: Plattenteller
+        type: object
+        fields:
+          - name: datei
+            label: Song (nur lizenzfreie Musik!)
+            type: file
+            options:
+              media: musik
+          - { name: titel, label: Songtitel, type: string }
+          - { name: interpret, label: Interpret, type: string }
+          - { name: lizenz, label: Lizenzhinweis, type: string }
+          - name: fliegende_platte
+            label: Fliegende Platte (Easter Egg)
+            description: Musik startet beim ersten Tippen, eine Platte fliegt über die Seite
+            type: boolean
+            default: true
+      - name: klick
+        label: Klick-Knopf
+        type: object
+        fields:
+          - { name: knopf, label: Text auf dem Knopf, type: string }
+          - { name: zaehler, label: Wort hinter der Zahl (z. B. „geklickt“), type: string }

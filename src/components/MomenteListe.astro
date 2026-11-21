@@ -1,0 +1,65 @@
+---
+// Momente als Liste: Titel, Datum und der erste Satz der Geschichte.
+import { datum, ersterSatz, isoDatum, type Moment } from '../lib/inhalt';
+
+interface Props {
+  momente: Moment[];
+}
+
+const { momente } = Astro.props;
+---
+
+<ul class="liste momente">
+  {
+    momente.map((moment) => {
+      const satz = ersterSatz(moment.body);
+      return (
+        <li>
+          <a class="moment" href={`/momente/${moment.id}/`}>
+            <span class="moment-titel">{moment.data.titel}</span>
+            <time class="moment-datum" datetime={isoDatum(moment.data.datum)}>{datum(moment.data.datum)}</time>
+            {satz && <span class="moment-satz">{satz}</span>}
+          </a>
+        </li>
+      );
+    })
+  }
+</ul>
+
+<style>
+  .momente {
+    display: grid;
+    gap: clamp(26px, 3.4cqi, 40px);
+    max-width: 680px;
+  }
+  .moment {
+    display: block;
+    text-decoration: none;
+  }
+  .moment-titel {
+    display: block;
+    font-weight: 600;
+    font-size: 26px;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+  .moment:hover .moment-titel {
+    text-decoration: underline;
+    text-decoration-color: var(--orange);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
+  }
+  .moment-datum {
+    display: block;
+    margin-top: 6px;
+    font-size: 14px;
+    color: var(--leise);
+  }
+  .moment-satz {
+    display: block;
+    margin-top: 8px;
+    font-family: var(--lese);
+    font-size: 18px;
+    line-height: 1.55;
+  }
+</style>

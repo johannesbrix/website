@@ -1,0 +1,21 @@
+# Abhängigkeiten & Build
+node_modules/
+dist/
+.astro/
+
+# Lokale Umgebung
+.env
+.env.*
+.DS_Store
+Thumbs.db
+
+# Eingangsordner für neue Beiträge (Originale nie committen)
+eingang/
+
+# Server (api/): lokale Testdaten und Geheimnisse
+.wrangler/
+.dev.vars
+
+# Claude Code: lokale, persönliche Einstellungen
+.claude/settings.local.json
+CLAUDE.local.md

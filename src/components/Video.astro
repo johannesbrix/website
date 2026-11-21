@@ -1,0 +1,162 @@
+---
+// YouTube-Video mit Zwei-Klick-Lösung: Zuerst steht nur eine ruhige Fläche mit Titel da,
+// es wird nichts von YouTube geladen (auch kein Vorschaubild, das wäre fremdes Bildmaterial).
+// Erst der Klick auf „Abspielen“ lädt den Player im erweiterten Datenschutzmodus (youtube-nocookie.com).
+interface Props {
+  titel: string;
+  /** YouTube-Video-ID */
+  id: string;
+  von?: string;
+  warum?: string;
+  /** groß unter der Geschichte statt im Raster */
+  gross?: boolean;
+}
+
+const { titel, id, von, warum, gross = false } = Astro.props;
+---
+
+<figure class:list={['video', { gross }]}>
+  <div class="video-flaeche" data-video={id} data-video-titel={titel}>
+    <button class="video-start" type="button" data-video-start>
+      <span class="video-play" aria-hidden="true"></span>
+      <span class="video-name">{titel}<span class="nur-sr"> abspielen</span></span>
+      <span class="video-hinweis">Beim Abspielen lädt das Video von YouTube.</span>
+    </button>
+  </div>
+  <figcaption class="video-info">
+    {von && <span class="video-von">{von}</span>}
+    <a class="video-extern" href={`https://www.youtube.com/watch?v=${id}`}>Auf YouTube ansehen</a>
+    <a class="video-extern" href="/datenschutz/#youtube-videos">Datenschutz</a>
+    {warum && <p class="video-warum">{warum}</p>}
+  </figcaption>
+</figure>
+
+<style>
+  .video {
+    margin: 0;
+  }
+  .video-flaeche {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: var(--r);
+    background: #1b1b1a;
+  }
+  .gross .video-flaeche {
+    border-radius: var(--r-gross);
+  }
+  .video-flaeche :global(iframe) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+  .video-start {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-end;
+    gap: 6px;
+    width: 100%;
+    padding: clamp(16px, 2.4cqi, 28px);
+    border: 0;
+    background: transparent;
+    color: #ffffff;
+    text-align: left;
+    cursor: pointer;
+  }
+  .video-play {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 68px;
+    height: 68px;
+    margin: -34px 0 0 -34px;
+    border-radius: 50%;
+    background: #ffffff;
+    transition: transform 0.15s;
+  }
+  .video-play::after {
+    content: '';
+    position: absolute;
+    left: 27px;
+    top: 21px;
+    border-style: solid;
+    border-width: 13px 0 13px 21px;
+    border-color: transparent transparent transparent #1b1b1a;
+  }
+  .video-start:hover .video-play {
+    transform: scale(1.06);
+  }
+  .video-name {
+    max-width: 30em;
+    font-weight: 600;
+    font-size: clamp(17px, 1.8cqi, 22px);
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
+  .video-hinweis {
+    font-size: 13px;
+    opacity: 0.75;
+  }
+  .video-info {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 18px;
+    margin-top: 12px;
+    font-size: 14px;
+    color: var(--leise);
+  }
+  .video-von {
+    font-weight: 600;
+    color: var(--text);
+  }
+  .video-extern {
+    text-decoration: none;
+  }
+  .video-extern:hover {
+    text-decoration: underline;
+    text-decoration-color: var(--orange);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
+  }
+  .video-warum {
+    flex-basis: 100%;
+    margin-top: 4px;
+    font-family: var(--lese);
+    font-size: 17px;
+    line-height: 1.5;
+    color: var(--text);
+  }
+</style>
+
+<script>
+  // Erst der Klick lädt YouTube. Die Hintergrundmusik der Seite pausiert dabei.
+  function abspielen(knopf: HTMLElement) {
+    const flaeche = knopf.closest<HTMLElement>('[data-video]');
+    if (!flaeche) return;
+    const rahmen = document.createElement('iframe');
+    rahmen.src = `https://www.youtube-nocookie.com/embed/${flaeche.dataset.video}?autoplay=1&rel=0`;
+    rahmen.title = flaeche.dataset.videoTitel || 'Video';
+    rahmen.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+    rahmen.allowFullscreen = true;
+    rahmen.referrerPolicy = 'strict-origin-when-cross-origin';
+    flaeche.replaceChildren(rahmen);
+    rahmen.focus();
+    const musik = document.querySelector<HTMLAudioElement>('audio[data-song]');
+    if (musik && !musik.paused) musik.pause();
+  }
+
+  const w = window as Window & { __jbVideo?: boolean };
+  if (!w.__jbVideo) {
+    w.__jbVideo = true;
+    document.addEventListener('click', (e) => {
+      const knopf = (e.target as Element | null)?.closest?.<HTMLElement>('[data-video-start]');
+      if (knopf) abspielen(knopf);
+    });
+  }
+</script>

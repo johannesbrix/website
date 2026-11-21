@@ -1,0 +1,14 @@
+{
+  "name": "johannesbrix-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 8787",
+    "deploy": "wrangler deploy",
+    "db:lokal": "wrangler d1 execute johannesbrix --local --file=schema.sql",
+    "db:live": "wrangler d1 execute johannesbrix --remote --file=schema.sql"
+  },
+  "devDependencies": {
+    "wrangler": "4.166.0"
+  }
+}

@@ -1,0 +1,145 @@
+---
+// Footer: Plattenteller links, Plattform-Links rechts, darunter Rechtliches.
+// Die Platte schaltet über src/lib/musik.js dieselbe Musik wie die fliegende Platte.
+import { Image } from 'astro:assets';
+import gesicht from '../assets/bilder/johannes-gesicht.jpg';
+import { einstellungen, plattformen } from '../lib/inhalt';
+
+const site = await einstellungen();
+const links = plattformen(site.links);
+---
+
+<footer class="rahmen">
+  <div class="fuss">
+    <div class="platte-box">
+      <button class="platte" type="button" aria-label="Song abspielen" data-platte>
+        <span class="scheibe">
+          <Image class="etikett" src={gesicht} alt="" width={132} height={132} loading="lazy" />
+          <span class="spindel"></span>
+        </span>
+        <span class="glanz"></span>
+      </button>
+      <div>
+        <p class="platte-text" data-platte-text>{site.plattenteller.datei ? 'Zum Abspielen tippen' : 'Zum Drehen tippen'}</p>
+        {
+          site.plattenteller.datei && site.plattenteller.fliegende_platte && (
+            <button class="platte-schalter" type="button" data-flieger-schalter hidden>
+              Fliegende Platte ausblenden
+            </button>
+          )
+        }
+      </div>
+    </div>
+    {
+      links.length > 0 && (
+        <ul class="liste links">
+          {links.map((l) => <li><a href={l.href} rel="me">{l.name}</a></li>)}
+        </ul>
+      )
+    }
+    <p class="klein">
+      <a href="/impressum/">Impressum</a>
+      <a href="/datenschutz/">Datenschutz</a>
+      <span>© {new Date().getFullYear()} {site.name}</span>
+    </p>
+  </div>
+</footer>
+
+<style>
+  .fuss {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 28px clamp(24px, 4cqi, 64px);
+    padding-block: 44px 48px;
+  }
+  .platte-box {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .platte {
+    position: relative;
+    flex: none;
+    width: 88px;
+    height: 88px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: #1b1b1a;
+    cursor: pointer;
+  }
+  .platte-text {
+    max-width: 12em;
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--leise);
+  }
+  .platte-schalter {
+    display: inline-block;
+    margin-top: 2px;
+    padding: 8px 0;
+    border: 0;
+    background: none;
+    font-size: 14px;
+    color: var(--text);
+    text-decoration: underline;
+    text-decoration-color: var(--linie);
+    text-underline-offset: 4px;
+    cursor: pointer;
+  }
+  .platte-schalter:hover {
+    text-decoration-color: var(--orange);
+  }
+  .platte-schalter[hidden] {
+    display: none;
+  }
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px 30px;
+  }
+  /* Größere Trefferfläche, ohne das Layout zu verschieben */
+  .links a,
+  .klein a {
+    display: inline-block;
+    padding-block: 8px;
+    margin-block: -8px;
+  }
+  .links a {
+    font-weight: 600;
+    font-size: 19px;
+    letter-spacing: -0.01em;
+    text-decoration: none;
+  }
+  .links a:hover,
+  .klein a:hover {
+    text-decoration: underline;
+    text-decoration-color: var(--orange);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 5px;
+  }
+  .klein {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 20px;
+    font-size: 14px;
+    color: var(--leise);
+  }
+  .klein a {
+    text-decoration: none;
+    padding-block: 12px;
+    margin-block: -12px;
+  }
+  @container (max-width: 760px) {
+    .fuss {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .links {
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+  }
+</style>
