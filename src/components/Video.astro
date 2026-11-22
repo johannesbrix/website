@@ -68,24 +68,24 @@ const { titel, id, von, warum, gross = false } = Astro.props;
     text-align: left;
     cursor: pointer;
   }
+  /* Mittig im freien Raum über dem Titel, damit er am Handy den Titel nie überdeckt */
   .video-play {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 68px;
-    height: 68px;
-    margin: -34px 0 0 -34px;
+    display: grid;
+    flex: none;
+    place-items: center;
+    align-self: center;
+    width: clamp(56px, 6cqi, 68px);
+    height: clamp(56px, 6cqi, 68px);
+    margin-block: auto;
     border-radius: 50%;
     background: #ffffff;
     transition: transform 0.15s;
   }
   .video-play::after {
     content: '';
-    position: absolute;
-    left: 27px;
-    top: 21px;
+    margin-left: 5px;
     border-style: solid;
-    border-width: 13px 0 13px 21px;
+    border-width: 12px 0 12px 19px;
     border-color: transparent transparent transparent #1b1b1a;
   }
   .video-start:hover .video-play {

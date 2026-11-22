@@ -1,0 +1,14 @@
+---
+// Ein Brixmap-Pin (Sonne, Rakete, Haken) wie auf der Karte. Aussehen: .pin in global.css.
+import Icon from './Icon.astro';
+import { ARTEN, type Art } from '../lib/brixmap';
+
+interface Props {
+  art: Art;
+  class?: string;
+}
+
+const { art, class: klasse } = Astro.props;
+---
+
+<span class:list={['pin', `pin-${art}`, klasse]} aria-hidden="true"><Icon name={ARTEN[art].icon} /></span>

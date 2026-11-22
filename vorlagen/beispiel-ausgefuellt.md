@@ -14,11 +14,7 @@
 
 **Status:**
 
-**Zeitraum:**
-
 **Auf Startseite zeigen:** nein
-
-**Ort:**
 
 **Titelbild:**
 

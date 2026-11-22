@@ -1,19 +1,22 @@
 ---
-// Kopfzeile: „JB.“ links, Navigation rechts. Unter 760 px eine Pill „Menü“,
-// die ein Vollbild-Menü öffnet (modaler <dialog>: Escape schließt, der Rest der Seite ist inert).
+// Kopfzeile: „JB.“ links, rechts die drei Türen. Unter 760 px ein runder Icon-Knopf, der ein
+// Vollbild-Menü öffnet (modaler <dialog>: Escape schließt, der Rest der Seite ist inert).
+// Das Menü ist bewusst typografisch: die drei Türen groß wie Seitentitel, die aktuelle Seite trägt
+// den orangen Punkt wie „JB.“; unten nur die Plattformen und Rechtliches.
+import Icon from './Icon.astro';
 import { bereiche, einstellungen, plattformen } from '../lib/inhalt';
 
 const site = await einstellungen();
 const pfad = Astro.url.pathname;
 
 // Drei Türen: was ich mache, was mich antreibt, wo wir uns begegnen
-const eintraege = [
+const eintraege: { name: string; href: string }[] = [
   { name: 'Projekte', href: '/projekte/' },
   { name: 'Rise & Shine', href: '/rise-and-shine/' },
   { name: 'Brixmap', href: '/brixmap/' },
 ];
-// Bereichsseiten, Beiträge und Momente gehören zu „Projekte“
-const projektPfade = [...(await bereiche()).map((b) => `/${b.id}/`), '/momente/'];
+// Bereichsseiten und Beiträge gehören zu „Projekte“
+const projektPfade = (await bereiche()).map((b) => `/${b.id}/`);
 
 // aria-current: „page“ auf der Seite selbst, „true“ auf Unterseiten
 function aktuell(href: string) {
@@ -30,29 +33,48 @@ const links = plattformen(site.links);
   <nav class="nav" aria-label="Hauptnavigation">
     {eintraege.map((e) => <a href={e.href} aria-current={aktuell(e.href)}>{e.name}</a>)}
   </nav>
-  <button class="menue" type="button" aria-expanded="false" aria-controls="menue" data-menue-auf>Menü</button>
+  <button class="icon-knopf menue-auf" type="button" aria-label="Menü" aria-expanded="false" aria-controls="menue" data-menue-auf>
+    <span class="menue-linien" aria-hidden="true"><span></span><span></span></span>
+  </button>
 </header>
 
-<dialog class="menue-panel" id="menue" aria-label="Menü" data-menue>
-  <div class="kopf rahmen">
+<dialog class="menue-panel" id="menue" aria-label="Menü" tabindex="-1" data-menue>
+  <div class="kopf menue-kopf">
     <a class="logo" href="/">JB<span class="punkt" aria-hidden="true"></span><span class="nur-sr">, {site.name}, zur Startseite</span></a>
-    <button class="menue" type="button" autofocus data-menue-zu>Schließen</button>
+    <button class="icon-knopf" type="button" aria-label="Menü schließen" data-menue-zu>
+      <Icon name="schliessen" />
+    </button>
   </div>
-  <nav class="rahmen menue-nav" aria-label="Hauptnavigation">
+  <nav class="menue-nav" aria-label="Hauptnavigation">
     <ul class="liste">
-      {eintraege.map((e) => <li><a href={e.href} aria-current={aktuell(e.href)}>{e.name}</a></li>)}
+      {
+        eintraege.map((e, i) => (
+          <li style={`--i: ${i}`}>
+            <a href={e.href} aria-current={aktuell(e.href)}>
+              {e.name}
+              <span class="punkt" aria-hidden="true" />
+            </a>
+          </li>
+        ))
+      }
     </ul>
   </nav>
-  {
-    links.length > 0 && (
-      <div class="rahmen menue-links">
-        <ul class="liste">
-          {links.map((l) => <li><a href={l.href} rel="me">{l.name}</a></li>)}
+  <div class="menue-unten">
+    {
+      links.length > 0 && (
+        <ul class="sozial">
+          {links.map((l) => (
+            <li>
+              <a class="icon-knopf" href={l.href} rel="me" aria-label={l.name} title={l.name}>
+                <Icon name={l.icon} />
+              </a>
+            </li>
+          ))}
         </ul>
-      </div>
-    )
-  }
-  <p class="rahmen menue-klein"><a href="/impressum/">Impressum</a><a href="/datenschutz/">Datenschutz</a></p>
+      )
+    }
+    <p class="menue-klein"><a href="/impressum/">Impressum</a><a href="/datenschutz/">Datenschutz</a></p>
+  </div>
 </dialog>
 
 <style>
@@ -82,37 +104,40 @@ const links = plattformen(site.links);
     text-decoration: none;
   }
   .nav a:hover,
-  .nav a[aria-current],
-  .menue-nav a:hover,
-  .menue-nav a[aria-current],
-  .menue-links a:hover {
+  .nav a[aria-current] {
     text-decoration: underline;
     text-decoration-color: var(--orange);
     text-decoration-thickness: 2px;
     text-underline-offset: 7px;
   }
-  .menue {
+  .menue-auf {
     display: none;
-    align-items: center;
-    height: 44px;
-    padding: 0 18px;
-    border: 0;
-    border-radius: 999px;
-    background: var(--flaeche);
-    color: var(--text);
-    font: 500 15px var(--grotesk);
-    cursor: pointer;
+  }
+  /* Zwei Linien statt drei: ruhiger, gleiche Breite wie das Schließen-Kreuz */
+  .menue-linien {
+    display: grid;
+    gap: 6px;
+    width: 18px;
+  }
+  .menue-linien span {
+    height: 2px;
+    border-radius: 2px;
+    background: currentColor;
   }
   @container (max-width: 760px) {
+    .kopf {
+      min-height: 68px;
+    }
     .nav {
       display: none;
     }
-    .menue {
-      display: inline-flex;
+    .menue-auf {
+      display: inline-grid;
     }
   }
 
-  /* Vollbild-Menü */
+  /* Vollbild-Menü. Kein .rahmen hier: dessen margin-inline: auto ließe die Zeilen im
+     Flex-Layout auf Inhaltsbreite schrumpfen und in die Mitte rutschen. */
   .menue-panel {
     position: fixed;
     inset: 0;
@@ -121,56 +146,101 @@ const links = plattformen(site.links);
     max-width: none;
     max-height: none;
     margin: 0;
-    padding: 0;
+    padding: 0 clamp(20px, 4.4cqi, 64px);
+    box-sizing: border-box;
     border: 0;
     overflow-y: auto;
     background: var(--grund);
     color: var(--text);
   }
+  .menue-panel[open] {
+    display: flex;
+    flex-direction: column;
+    animation: menue-auf 0.2s ease-out;
+  }
+  .menue-panel:focus {
+    outline: none;
+  }
   .menue-panel::backdrop {
     background: var(--grund);
   }
-  .menue-panel .menue {
-    display: inline-flex;
+  @keyframes menue-auf {
+    from {
+      opacity: 0;
+    }
   }
+  .menue-kopf {
+    min-height: 68px;
+  }
+
+  /* Die drei Türen: groß wie Seitentitel, feine Linien dazwischen, die aktuelle Seite mit Punkt */
   .menue-nav {
-    padding-block: clamp(16px, 4cqi, 40px) 36px;
+    padding-top: clamp(16px, 5vh, 48px);
+  }
+  .menue-nav li {
+    border-bottom: 1px solid var(--linie);
+    opacity: 0;
+    transform: translateY(10px);
+    animation: menue-ein 0.45s cubic-bezier(0.2, 0.75, 0.25, 1) forwards;
+    animation-delay: calc(var(--i) * 50ms + 60ms);
+  }
+  .menue-nav li:first-child {
+    border-top: 1px solid var(--linie);
+  }
+  @keyframes menue-ein {
+    to {
+      opacity: 1;
+      transform: none;
+    }
   }
   .menue-nav a {
-    display: block;
-    padding-block: 6px;
-    font-weight: 600;
-    font-size: 36px;
-    letter-spacing: -0.03em;
-    line-height: 1.2;
+    display: flex;
+    align-items: baseline;
+    padding-block: 20px;
+    font-weight: 700;
+    font-size: clamp(38px, 11vw, 52px);
+    letter-spacing: -0.045em;
+    line-height: 1;
     text-decoration: none;
   }
-  .menue-nav a:hover,
-  .menue-nav a[aria-current] {
-    text-underline-offset: 6px;
+  .menue-nav .punkt {
+    opacity: 0;
+    transition: opacity 0.15s;
   }
-  .menue-links {
-    padding-bottom: 24px;
+  .menue-nav a[aria-current] .punkt {
+    opacity: 1;
+  }
+  .menue-nav a:active {
+    opacity: 0.6;
+  }
+  .menue-unten {
+    display: grid;
+    gap: 20px;
+    margin-top: auto;
+    padding-top: 32px;
+    padding-bottom: max(28px, env(safe-area-inset-bottom));
   }
   .menue-klein {
     display: flex;
     gap: 20px;
-    padding-bottom: 40px;
     font-size: 14px;
     color: var(--leise);
   }
   .menue-klein a {
     display: inline-block;
     padding-block: 12px;
+    margin-block: -12px;
     text-decoration: none;
   }
-  .menue-links a {
-    display: block;
-    padding-block: 8px;
-    font-weight: 600;
-    font-size: 19px;
-    letter-spacing: -0.01em;
-    text-decoration: none;
+  @media (prefers-reduced-motion: reduce) {
+    .menue-panel[open] {
+      animation: none;
+    }
+    .menue-nav li {
+      animation: none;
+      opacity: 1;
+      transform: none;
+    }
   }
 </style>
 
@@ -184,6 +254,9 @@ const links = plattformen(site.links);
     auf.dataset.bereit = '';
     auf.addEventListener('click', () => {
       menue.showModal();
+      // Fokus aufs Menü selbst statt auf den ersten Knopf: kein Fokusring beim Öffnen mit dem Finger,
+      // mit der Tastatur führt Tab direkt zu den Einträgen
+      menue.focus();
       auf.setAttribute('aria-expanded', 'true');
     });
     menue.addEventListener('close', () => auf.setAttribute('aria-expanded', 'false'));

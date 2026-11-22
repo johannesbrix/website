@@ -1,12 +1,7 @@
-# Globale Einstellungen – auch in Pages CMS unter „Einstellungen“ bearbeitbar.
+# Allgemeines – in Pages CMS unter „Allgemein“ bearbeitbar.
+# Intro und Porträt stehen in startseite.yml, das Rise-and-Shine-Band in band.yml.
 name: Johannes Brix
 beschreibung: "Ich bin Motivator, Sportler, Mathematiker, Gourmet und vor allem Teamplayer."
-# Der Schlusspunkt des Intros wird auf der Seite automatisch zum orangen Punkt.
-intro: "Ich bin Motivator, Sportler, Mathematiker, Gourmet und vor allem Teamplayer. Ich liebe es, großartige Dinge mit anderen Menschen zu erreichen. Ich bin Johannes."
-portrait: ../../assets/bilder/johannes-hero.jpg
-portrait_alt: "Johannes im Sakko mit Fliege, lachend mit Peace-Zeichen, hinter ihm ein roter Herbstbaum"
-motto: Rise and Shine
-motto_text: "Wir haben täglich die Möglichkeit, bestmöglich unsere Zeit mit den Begebenheiten des Tages zu leben. Was kannst du heute noch tun, damit dein Tag ein kleines Stückchen besser wird?"
 links:
   instagram: https://www.instagram.com/johannes.brix
   strava: https://www.strava.com/athletes/111346652
@@ -17,7 +12,4 @@ plattenteller:
   titel: Gypsy Jazz
   interpret: Aurec
   lizenz: "Pixabay Content License, https://pixabay.com/music/modern-jazz-gypsy-jazz-596436/"
-  fliegende_platte: true          # Easter Egg: Musik startet beim ersten Tippen, eine Platte fliegt über die Seite. false = aus
-klick:
-  knopf: "Wenn du mich klickst, wird dein Tag garantiert besser!"
-  zaehler: "geklickt"     # angezeigt als „12× geklickt“
+  fliegende_platte: true          # Easter Egg: eine Platte fliegt über die Seite, ein Tipp darauf startet die Musik. false = aus

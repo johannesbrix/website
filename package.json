@@ -21,7 +21,9 @@
     "astro": "~7.3.8",
     "js-yaml": "^5.5.0",
     "leaflet": "^1.9.4",
-    "sharp": "^0.35.5"
+    "lucide-static": "^1.77.0",
+    "sharp": "^0.35.5",
+    "simple-icons": "^16.38.0"
   },
   "devDependencies": {
     "@types/leaflet": "^1.9.22"

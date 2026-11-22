@@ -5,7 +5,7 @@ const e = (wert) =>
 
 const DATUM = new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/Berlin' });
 const datum = (iso) => (iso ? DATUM.format(new Date(iso)) : '');
-const ZEICHEN = { neu: '🆕', offen: '💌', besucht: '✅' };
+const WOCHE = 7 * 24 * 60 * 60 * 1000;
 
 const STIL = `
   :root { color-scheme: light dark; --grund: #fff; --text: #373634; --leise: #6b6965; --linie: #e6e5e2; --flaeche: #f1f1ef; --orange: #fc4c02; }
@@ -22,9 +22,17 @@ const STIL = `
   .kopf nav { display: flex; gap: 12px; align-items: center; }
   .ort { padding: 16px; border: 1px solid var(--linie); border-radius: 14px; margin-bottom: 12px; }
   .ort:target { border-color: var(--orange); }
-  .meta { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 14px; color: var(--leise); }
+  .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 12px; font-size: 14px; color: var(--leise); }
+  .punkt { display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 50%; box-sizing: border-box; vertical-align: -1px; }
+  .punkt.neu { border: 2px solid var(--orange); }
+  .punkt.ich { background: var(--orange); }
+  .punkt.offen { background: var(--text); }
+  .geraet { margin-top: 28px; padding: 18px; border-radius: 14px; background: var(--flaeche); }
+  .geraet h2 { margin: 0 0 6px; }
+  .geraet form { margin-top: 14px; }
+  .marke { padding: 1px 8px; border-radius: 999px; background: var(--orange); color: #fff; font-size: 12px; font-weight: 700; }
+  .hinweis { margin-top: 8px; color: var(--leise); }
   .notiz { margin-top: 6px; }
-  .kommentar { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--linie); }
   .klein { margin-top: 6px; font-size: 14px; color: var(--leise); }
   .aktionen { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: flex-start; }
   form { margin: 0; }
@@ -66,36 +74,24 @@ function aktion(id, wert, beschriftung, leise = false) {
 }
 
 function ortKarte(ort, kategorien) {
-  const heute = new Date().toISOString().slice(0, 10);
   const osm = `https://www.openstreetmap.org/?mlat=${ort.lat}&mlon=${ort.lng}#map=17/${ort.lat}/${ort.lng}`;
   const optionen = Object.entries(kategorien)
     .map(([id, name]) => `<option value="${id}"${id === ort.kategorie ? ' selected' : ''}>${e(name)}</option>`)
     .join('');
-  let knoepfe = '';
-  if (ort.status === 'neu') knoepfe = aktion(ort.id, 'freigeben', 'Freigeben');
-  if (ort.status === 'offen') {
-    knoepfe = `<details><summary>Als besucht markieren</summary>
-      <form method="post" action="/admin/ort"><input type="hidden" name="id" value="${ort.id}">
-        <label>Dein Kommentar (erscheint auf der Karte)<textarea name="kommentar" rows="3" maxlength="500"></textarea></label>
-        <label>Besucht am<input type="date" name="besucht_am" value="${heute}"></label>
-        <div class="aktionen"><button name="aktion" value="besucht">Speichern</button></div>
-      </form></details>`;
-  }
-  if (ort.status === 'besucht') knoepfe = aktion(ort.id, 'offen', 'Zurück auf „offen“', true);
+  const knoepfe = ort.status === 'neu' ? aktion(ort.id, 'freigeben', 'Freigeben') : '';
+  const frisch = ort.status === 'offen' && Date.now() - new Date(ort.erstellt).getTime() < WOCHE;
   return `<article class="ort" id="ort-${ort.id}">
-    <p class="meta"><span>${ZEICHEN[ort.status] ?? ''} ${e(kategorien[ort.kategorie] ?? ort.kategorie)}</span><span>${e(datum(ort.erstellt))}</span>${ort.von ? `<span>von ${e(ort.von)}</span>` : ''}</p>
+    <p class="meta"><span><span class="punkt ${e(ort.status)}"></span>${e(kategorien[ort.kategorie] ?? ort.kategorie)}</span><span>${e(datum(ort.erstellt))}</span>${ort.von ? `<span>von ${e(ort.von)}</span>` : ''}${frisch ? '<span class="marke">Neu</span>' : ''}</p>
     <h3>${e(ort.name)}</h3>
     ${ort.notiz ? `<p class="notiz">${e(ort.notiz)}</p>` : ''}
-    ${ort.status === 'besucht' ? `<p class="kommentar">${ort.kommentar ? e(ort.kommentar) : '<span class="leer">Noch kein Kommentar</span>'}<br><span class="klein">Besucht am ${e(datum(ort.besucht_am))}</span></p>` : ''}
     <p class="klein"><a href="${osm}" target="_blank" rel="noopener noreferrer">Auf der Karte ansehen</a> (${ort.lat}, ${ort.lng})</p>
-    <div class="aktionen">${knoepfe}</div>
+    ${knoepfe ? `<div class="aktionen">${knoepfe}</div>` : ''}
     <details><summary>Bearbeiten</summary>
       <form method="post" action="/admin/ort"><input type="hidden" name="id" value="${ort.id}">
         <label>Name<input name="name" value="${e(ort.name)}" maxlength="80"></label>
         <label>Kategorie<select name="kategorie">${optionen}</select></label>
         <label>Notiz<textarea name="notiz" rows="3" maxlength="300">${e(ort.notiz)}</textarea></label>
         <label>Empfohlen von<input name="von" value="${e(ort.von)}" maxlength="40"></label>
-        <label>Dein Kommentar<textarea name="kommentar" rows="3" maxlength="500">${e(ort.kommentar)}</textarea></label>
         <div class="aktionen"><button name="aktion" value="speichern">Speichern</button></div>
       </form></details>
     <details><summary>Löschen</summary>
@@ -107,16 +103,27 @@ function abschnitt(titel, orte, kategorien, leer) {
   return `<h2>${titel} (${orte.length})</h2>${orte.length ? orte.map((o) => ortKarte(o, kategorien)).join('') : `<p class="leer">${leer}</p>`}`;
 }
 
-export function adminSeite({ orte, klicks, seite: adresse, kategorien }) {
+export function adminSeite({ orte, klicks, seite: adresse, kategorien, pruefen }) {
   const nach = (status) => orte.filter((o) => o.status === status);
+  const wartend = nach('neu');
   return seite(
     'Brixmap-Admin',
     `<div class="kopf"><h1>Brixmap-Admin</h1>
       <nav>${adresse ? `<a href="${e(adresse)}/brixmap/">Zur Brixmap</a>` : ''}
         <form method="post" action="/admin/abmelden"><button class="leise">Abmelden</button></form></nav></div>
-    ${abschnitt('Neu', nach('neu'), kategorien, 'Keine neuen Empfehlungen.')}
-    ${abschnitt('Auf der Karte', nach('offen'), kategorien, 'Noch keine freigegebenen Empfehlungen.')}
-    ${abschnitt('Besucht', nach('besucht'), kategorien, 'Noch nichts besucht.')}
+    <p class="hinweis">${
+      pruefen
+        ? 'Neue Empfehlungen erscheinen erst, wenn du sie freigibst.'
+        : 'Neue Empfehlungen erscheinen sofort auf der Karte. Was nicht passt, kannst du hier bearbeiten oder löschen.'
+    }</p>
+    <section class="geraet">
+      <h2>Orte direkt auf der Karte setzen</h2>
+      <p class="hinweis">Schalte dein Handy einmal frei. Danach heißt der Knopf auf der Karte „Ort setzen“, deine Orte erscheinen orange mit Sonne, und an jedem Ort kannst du direkt löschen. Die Freischaltung gilt ein Jahr.</p>
+      <form method="post" action="/admin/geraet"><button>Dieses Gerät freischalten</button></form>
+    </section>
+    ${pruefen || wartend.length ? abschnitt('Wartet auf Freigabe', wartend, kategorien, 'Keine neuen Empfehlungen.') : ''}
+    ${abschnitt('Deine Orte', nach('ich'), kategorien, 'Noch keine eigenen Orte auf der Karte. Orte aus Beiträgen stehen nicht hier.')}
+    ${abschnitt('Empfehlungen', nach('offen'), kategorien, 'Noch keine Empfehlungen.')}
     <h2 id="zaehler">Klick-Zähler</h2>
     <form class="zaehler" method="post" action="/admin/zaehler">
       <label>Stand<input type="number" name="wert" min="0" value="${Number(klicks) || 0}"></label>

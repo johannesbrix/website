@@ -33,7 +33,7 @@ Ohne diesen Schritt läuft die Seite trotzdem: Der Klick-Zähler zählt dann nur
 - [ ] Claude Code sagen: „Richte den Server in api/ ein.“ Dabei öffnet sich einmal der Browser für die Anmeldung bei Cloudflare.
 - [ ] Ein langes Admin-Passwort festlegen und im Passwort-Manager speichern.
 - [ ] Admin-Seite öffnen, anmelden, Lesezeichen am Handy setzen.
-- [ ] Test: auf der Brixmap einen Ort empfehlen, im Admin freigeben, als besucht markieren, wieder löschen.
+- [ ] Test: auf der Brixmap einen Ort empfehlen (erscheint sofort) und ihn wieder löschen, am freigeschalteten Handy direkt an der Ortskarte.
 
 ## 3. Inhalte
 
@@ -53,14 +53,16 @@ Ohne diesen Schritt läuft die Seite trotzdem: Der Klick-Zähler zählt dann nur
 
 - [ ] Am eigenen Handy: Startseite, eine Bereichsseite, ein Beitrag, Menü, Plattenteller, Klick-Knopf. Einmal hell und einmal dunkel (Systemeinstellung umstellen).
 - [ ] Musik auf iPhone (Safari) und Android (Chrome), am besten auch auf einem fremden Handy:
-  - Der erste Tipp irgendwo startet die Musik, die Platte beginnt sich zu drehen.
+  - Beim Laden läuft nichts. Tippen auf Text, Menü, Karte oder Filter startet nichts.
+  - Ein Tipp auf die fliegende Platte (oder Play im Footer) startet die Musik, die Platte beginnt sich zu drehen.
   - Antippen der fliegenden Platte hält alles an. Die Platte bleibt stehen, auch nach einem Seitenwechsel.
   - Erneutes Antippen spielt an derselben Stelle weiter.
   - Beim Wechsel auf eine Bereichsseite und zurück läuft die Musik ohne Unterbrechung.
   - Die Platte verdeckt nichts Wichtiges dauerhaft, z. B. den Klick-Knopf oder das Menü.
   - Mit „Bewegung reduzieren“ (iPhone: Einstellungen › Bedienungshilfen › Bewegung) parkt die Platte unten rechts.
-  - Angehaltene Platte: „Ausblenden“ blendet sie aus, im Footer holt „Fliegende Platte zeigen“ sie zurück.
-- [ ] Brixmap am Handy: Karte mit einem Finger bewegen, Ort empfehlen (antippen, suchen, „Mein Standort“), Formular absenden.
+  - Platten-Knopf im Footer-Player: blendet die fliegende Platte aus und wieder ein; ausgeblendet bleibt sie auch nach dem Neuladen weg.
+- [ ] Brixmap am Handy: Karte mit einem Finger bewegen, Pin antippen (Ortskarte), Filter-Chips, „Empfehlen“: Karte unter den Pin schieben, suchen, „Mein Standort“, Formular absenden. Der Ort steht sofort auf der Karte.
+- [ ] Brixmap-Admin am Handy: anmelden, „Dieses Gerät freischalten“. Danach auf der Karte einen eigenen Ort setzen (Pin in der Mitte ist die Sonne, der Ort erscheint orange) und eine Test-Empfehlung wieder löschen.
 - [ ] Video auf Rise & Shine: Erst nach dem Klick lädt YouTube, die Musik der Seite pausiert dabei.
 - [ ] Am Laptop in zwei Browsern.
 - [ ] Link-Vorschau: den Link an dich selbst per WhatsApp schicken. Er sollte Bild, Name und Beschreibung zeigen. WhatsApp speichert Vorschauen im Cache, deshalb nach Änderungen notfalls mit `?v=2` testen.

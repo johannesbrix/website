@@ -3,11 +3,13 @@
 // Öffentlich (nur von den Seiten in ERLAUBTE_URSPRUENGE):
 //   GET  /klicks   Stand des Klick-Zählers aller Besucher
 //   POST /klicks   { anzahl } gebündelte Klicks zählen, mit Grenzen gegen Auto-Klicker
-//   GET  /orte     freigegebene Empfehlungen für die Brixmap
-//   POST /orte     neue Empfehlung, landet erst einmal in der Warteschlange (status „neu“)
+//   GET  /orte     Orte auf der Brixmap (Empfehlungen und Johannes' eigene)
+//   POST /orte     neuer Ort; erscheint sofort auf der Karte (mit FREIGABE = "pruefen" erst nach Freigabe).
+//                  Mit Geräte-Schlüssel von Johannes (Feld „ich“) wird es sein eigener Ort.
 //   GET  /suche?q= Ortssuche über Nominatim (OpenStreetMap), ohne die IP der Besucher weiterzugeben
-// Nur für Johannes, mit Passwort:
-//   /admin         Empfehlungen freigeben, als besucht markieren, kommentieren, löschen; Zähler korrigieren
+// Nur für Johannes:
+//   POST /orte/aendern  mit Geräte-Schlüssel: Ort löschen, direkt auf der Karte
+//   /admin              mit Passwort: Gerät freischalten, Orte bearbeiten und löschen, Zähler korrigieren
 
 import { anmeldeSeite, adminSeite } from './admin.js';
 
@@ -26,7 +28,9 @@ const GRENZEN = {
   klicksAllerProMinute: 3000, // alle Besucher zusammen
   empfehlungenProStunde: 5, // pro Besucher
   empfehlungenProTag: 15, // pro Besucher
-  wartendeHoechstens: 300, // offene Empfehlungen in der Warteschlange
+  empfehlungenAllerProTag: 100, // alle Besucher zusammen
+  orteHoechstens: 2000, // so viele Empfehlungen zeigt die Karte höchstens
+  wartendeHoechstens: 300, // nur mit FREIGABE = "pruefen": Empfehlungen, die auf Freigabe warten
   suchenProMinute: 20, // pro Besucher
   anmeldungenProStunde: 10, // Fehlversuche am Admin-Login pro Besucher
 };
@@ -34,6 +38,7 @@ const MINUTE = 60_000;
 const STUNDE = 60 * MINUTE;
 const TAG = 24 * STUNDE;
 const SITZUNG_TAGE = 30;
+const GERAET_TAGE = 365; // so lange gilt die Freischaltung eines Geräts
 
 export default {
   async fetch(request, env, ctx) {
@@ -61,6 +66,7 @@ async function beantworten(request, env, ctx) {
   if (pfad === '/klicks' && methode === 'POST') return klicksZaehlen(request, env);
   if (pfad === '/orte' && methode === 'GET') return orteLesen(request, env);
   if (pfad === '/orte' && methode === 'POST') return ortEmpfehlen(request, env);
+  if (pfad === '/orte/aendern' && methode === 'POST') return ortAendern(request, env);
   if (pfad === '/suche' && methode === 'GET') return suchen(request, env, ctx, url);
   if (pfad === '/') return new Response('johannesbrix.com', { headers: { 'content-type': 'text/plain; charset=utf-8' } });
   return json({ fehler: 'Nicht gefunden.' }, 404, request, env);
@@ -124,6 +130,19 @@ async function hmac(schluessel, inhalt) {
   return [...new Uint8Array(signatur)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+// Geräte-Schlüssel für Johannes: „bis.signatur“, ausgestellt auf der Admin-Seite, gespeichert im Browser
+// seines Handys. Damit setzt er eigene Orte und verwaltet die Karte direkt auf der Seite.
+async function geraeteSchluessel(env) {
+  const bis = Date.now() + GERAET_TAGE * TAG;
+  return `${bis}.${await hmac(env.SCHLUESSEL, `ich|${bis}`)}`;
+}
+
+async function istJohannes(env, schluessel) {
+  const [bis, signatur] = String(schluessel ?? '').split('.');
+  if (!env.SCHLUESSEL || !bis || !signatur || !(Number(bis) > Date.now())) return false;
+  return signatur === (await hmac(env.SCHLUESSEL, `ich|${bis}`));
+}
+
 // Kennung eines Besuchers für die Grenzen: täglich wechselnder Hash der IP, die IP selbst wird nie gespeichert
 async function besucher(request, env) {
   const ip = request.headers.get('CF-Connecting-IP') || 'unbekannt';
@@ -176,28 +195,35 @@ async function klicksZaehlen(request, env) {
 
 // ---------- Brixmap ----------
 
+const SPALTEN = 'id, name, kategorie, notiz, von, lat, lng, status';
+
 async function orteLesen(request, env) {
   const { results } = await env.DB.prepare(
-    "SELECT id, name, kategorie, notiz, von, lat, lng, status, kommentar, besucht_am FROM orte WHERE status IN ('offen', 'besucht') ORDER BY id DESC LIMIT 2000",
+    `SELECT ${SPALTEN} FROM orte WHERE status IN ('offen', 'ich') ORDER BY id DESC LIMIT ${GRENZEN.orteHoechstens}`,
   ).all();
-  // Kein Cache: Was Johannes freigibt, soll sofort auf der Karte stehen
+  // Kein Cache: Neue Orte und Johannes' Änderungen sollen sofort auf der Karte stehen
   return json({ orte: results }, 200, request, env);
 }
 
-function empfehlungPruefen(d) {
+// Webadressen haben in Empfehlungen nichts verloren; so lohnt sich die Karte nicht für Werbung
+const LINK = /https?:\/\/|www\.|[a-z0-9-]{2,}\.(?:com|net|org|info|biz|io|xyz|top|ru|cn|de|shop|online|site)(?![a-z])/i;
+
+// Prüft einen neuen Ort. Für Johannes' eigene Orte (ich = true) sind Notiz und Einwilligung freiwillig.
+function empfehlungPruefen(d, ich = false) {
   const name = text(d.name, 80);
   const notiz = text(d.notiz, 300);
-  const von = text(d.von, 40);
+  const von = ich ? '' : text(d.von, 40);
   const kategorie = String(d.kategorie ?? '');
   const lat = Number(d.lat);
   const lng = Number(d.lng);
   if (name.length < 2) return { fehler: 'Bitte gib dem Ort einen Namen.' };
   if (!(kategorie in KATEGORIEN)) return { fehler: 'Bitte wähle aus, was es ist.' };
-  if (notiz.length < 3) return { fehler: 'Bitte schreib kurz, warum du den Ort empfiehlst.' };
+  if (!ich && notiz.length < 3) return { fehler: 'Bitte schreib kurz, warum du den Ort empfiehlst.' };
+  if (!ich && [name, notiz, von].some((t) => LINK.test(t))) return { fehler: 'Bitte ohne Links oder Webadressen.' };
   if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
     return { fehler: 'Bitte wähle den Ort auf der Karte.' };
   }
-  if (d.einwilligung !== true) return { fehler: 'Bitte bestätige, dass deine Empfehlung veröffentlicht werden darf.' };
+  if (!ich && d.einwilligung !== true) return { fehler: 'Bitte bestätige, dass deine Empfehlung veröffentlicht werden darf.' };
   return { name, notiz, von, kategorie, lat: Math.round(lat * 1e5) / 1e5, lng: Math.round(lng * 1e5) / 1e5 };
 }
 
@@ -205,6 +231,20 @@ async function ortEmpfehlen(request, env) {
   if (!erlaubterUrsprung(request, env)) return json({ fehler: 'Nicht erlaubt.' }, 403, request, env);
   const daten = await jsonLesen(request);
   if (!daten || typeof daten !== 'object') return json({ fehler: 'Ungültige Anfrage.' }, 400, request, env);
+
+  // Johannes mit freigeschaltetem Gerät: sein eigener Ort, ohne Grenzen für Besucher
+  if (daten.ich) {
+    if (!(await istJohannes(env, daten.ich))) return json({ fehler: 'Die Freischaltung gilt nicht mehr.' }, 401, request, env);
+    const ort = empfehlungPruefen(daten, true);
+    if (ort.fehler) return json({ fehler: ort.fehler }, 400, request, env);
+    const neu = await env.DB.prepare(
+      `INSERT INTO orte (name, kategorie, notiz, von, lat, lng, status) VALUES (?, ?, ?, '', ?, ?, 'ich') RETURNING ${SPALTEN}`,
+    )
+      .bind(ort.name, ort.kategorie, ort.notiz, ort.lat, ort.lng)
+      .first();
+    return json({ ok: true, sichtbar: true, ort: neu }, 201, request, env);
+  }
+
   // Honigtopf-Feld ausgefüllt oder in unter 3 Sekunden abgeschickt: vermutlich ein Bot.
   // Er bekommt ein freundliches „Danke“, gespeichert wird nichts.
   if (daten.website || Number(daten.dauer) < 3000) return json({ ok: true }, 201, request, env);
@@ -217,14 +257,34 @@ async function ortEmpfehlen(request, env) {
   if (!proStunde || !proTag) {
     return json({ fehler: 'Du hast gerade schon einige Orte empfohlen, danke! Bitte versuch es später nochmal.' }, 429, request, env);
   }
-  const wartend = await env.DB.prepare("SELECT COUNT(*) AS anzahl FROM orte WHERE status = 'neu'").first();
-  if ((wartend?.anzahl ?? 0) >= GRENZEN.wartendeHoechstens) {
-    return json({ fehler: 'Gerade warten sehr viele Empfehlungen auf Freigabe. Bitte versuch es in ein paar Tagen nochmal.' }, 429, request, env);
+  if (!(await grenze(env, 'ealle', TAG, GRENZEN.empfehlungenAllerProTag))) {
+    return json({ fehler: 'Heute sind schon sehr viele Orte dazugekommen. Bitte versuch es morgen nochmal.' }, 429, request, env);
   }
-  await env.DB.prepare('INSERT INTO orte (name, kategorie, notiz, von, lat, lng) VALUES (?, ?, ?, ?, ?, ?)')
-    .bind(ort.name, ort.kategorie, ort.notiz, ort.von, ort.lat, ort.lng)
-    .run();
-  return json({ ok: true }, 201, request, env);
+  // Sofort sichtbar, außer Johannes stellt FREIGABE auf "pruefen" (wrangler.toml)
+  const pruefen = env.FREIGABE === 'pruefen';
+  const bestand = await env.DB.prepare(
+    "SELECT COUNT(*) AS alle, SUM(CASE WHEN status = 'neu' THEN 1 ELSE 0 END) AS wartend FROM orte",
+  ).first();
+  if ((bestand?.alle ?? 0) >= GRENZEN.orteHoechstens || (pruefen && (bestand?.wartend ?? 0) >= GRENZEN.wartendeHoechstens)) {
+    return json({ fehler: 'Die Karte ist gerade voll. Bitte versuch es in ein paar Tagen nochmal.' }, 429, request, env);
+  }
+  const neu = await env.DB.prepare(
+    `INSERT INTO orte (name, kategorie, notiz, von, lat, lng, status) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING ${SPALTEN}`,
+  )
+    .bind(ort.name, ort.kategorie, ort.notiz, ort.von, ort.lat, ort.lng, pruefen ? 'neu' : 'offen')
+    .first();
+  return json(pruefen ? { ok: true, sichtbar: false } : { ok: true, sichtbar: true, ort: neu }, 201, request, env);
+}
+
+// Johannes verwaltet die Karte direkt auf der Seite: { ich, id, aktion: 'loeschen' }
+async function ortAendern(request, env) {
+  if (!erlaubterUrsprung(request, env)) return json({ fehler: 'Nicht erlaubt.' }, 403, request, env);
+  const daten = await jsonLesen(request);
+  if (!daten || !(await istJohannes(env, daten.ich))) return json({ fehler: 'Die Freischaltung gilt nicht mehr.' }, 401, request, env);
+  const id = Number(daten.id);
+  if (!Number.isInteger(id) || daten.aktion !== 'loeschen') return json({ fehler: 'Ungültige Anfrage.' }, 400, request, env);
+  await env.DB.prepare('DELETE FROM orte WHERE id = ?').bind(id).run();
+  return json({ ok: true }, 200, request, env);
 }
 
 // Ortssuche über Nominatim. Nur auf Absenden, nicht beim Tippen (Nutzungsbedingungen von Nominatim).
@@ -249,12 +309,16 @@ async function suchen(request, env, ctx, url) {
   }
   if (!antwort.ok) return json({ fehler: 'Die Suche ist gerade nicht erreichbar.' }, 502, request, env);
   const daten = await antwort.json();
-  const treffer = daten.map((t) => ({
-    name: t.name || String(t.display_name).split(',')[0],
-    adresse: t.display_name,
-    lat: Number(t.lat),
-    lng: Number(t.lon),
-  }));
+  // Nominatim liefert für denselben Ort oft mehrere Objekte (Platz, Haltestelle, …) mit gleicher Adresse
+  const gesehen = new Set();
+  const treffer = daten
+    .map((t) => ({
+      name: t.name || String(t.display_name).split(',')[0],
+      adresse: t.display_name,
+      lat: Number(t.lat),
+      lng: Number(t.lon),
+    }))
+    .filter((t) => !gesehen.has(t.adresse) && gesehen.add(t.adresse));
   return json({ treffer }, 200, request, env);
 }
 
@@ -312,28 +376,27 @@ async function admin(request, env, url, pfad) {
     return weiter('/admin', { 'set-cookie': 'sitzung=; Path=/admin; Max-Age=0; HttpOnly; Secure; SameSite=Strict' });
   }
 
+  // Gerät freischalten: weiter zur Brixmap, der Schlüssel steht hinter # und geht an keinen Server.
+  // Die Seite speichert ihn im Browser und nimmt ihn sofort aus der Adresse.
+  if (pfad === '/admin/geraet' && request.method === 'POST') {
+    const ziel = new URL('/brixmap/', env.SEITE || 'https://johannesbrix.com');
+    ziel.hash = `ich=${await geraeteSchluessel(env)}`;
+    return weiter(ziel.toString());
+  }
+
   if (pfad === '/admin/ort' && request.method === 'POST') {
     const f = await request.formData();
     const id = Number(f.get('id'));
     const aktion = f.get('aktion');
-    const heute = new Date().toISOString().slice(0, 10);
     if (aktion === 'freigeben') await env.DB.prepare("UPDATE orte SET status = 'offen' WHERE id = ?").bind(id).run();
-    if (aktion === 'besucht') {
-      const datum = text(f.get('besucht_am'), 10);
-      await env.DB.prepare("UPDATE orte SET status = 'besucht', kommentar = ?, besucht_am = ? WHERE id = ?")
-        .bind(text(f.get('kommentar'), 500), /^\d{4}-\d{2}-\d{2}$/.test(datum) ? datum : heute, id)
-        .run();
-    }
-    if (aktion === 'offen') await env.DB.prepare("UPDATE orte SET status = 'offen', besucht_am = NULL WHERE id = ?").bind(id).run();
     if (aktion === 'speichern') {
       const kategorie = String(f.get('kategorie'));
-      await env.DB.prepare('UPDATE orte SET name = ?, kategorie = ?, notiz = ?, von = ?, kommentar = ? WHERE id = ?')
+      await env.DB.prepare('UPDATE orte SET name = ?, kategorie = ?, notiz = ?, von = ? WHERE id = ?')
         .bind(
           text(f.get('name'), 80) || 'Ohne Namen',
           kategorie in KATEGORIEN ? kategorie : 'sonstiges',
           text(f.get('notiz'), 300),
           text(f.get('von'), 40),
-          text(f.get('kommentar'), 500),
           id,
         )
         .run();
@@ -352,7 +415,14 @@ async function admin(request, env, url, pfad) {
   if (pfad === '/admin' && request.method === 'GET') {
     const { results } = await env.DB.prepare('SELECT * FROM orte ORDER BY id DESC LIMIT 2000').all();
     const zaehler = await env.DB.prepare("SELECT wert FROM zaehler WHERE name = 'klicks'").first();
-    return html(adminSeite({ orte: results, klicks: zaehler?.wert ?? 0, seite: env.SEITE || '', kategorien: KATEGORIEN }));
+    // „Dieses Gerät freischalten“ leitet zur Website weiter. Browser prüfen auch die Weiterleitung nach
+    // einem Formular gegen form-action, deshalb ist hier zusätzlich genau die eigene Website erlaubt.
+    const website = new URL(env.SEITE || 'https://johannesbrix.com').origin;
+    return html(
+      adminSeite({ orte: results, klicks: zaehler?.wert ?? 0, seite: env.SEITE || '', kategorien: KATEGORIEN, pruefen: env.FREIGABE === 'pruefen' }),
+      200,
+      { 'content-security-policy': SICHERHEIT['content-security-policy'].replace("form-action 'self'", `form-action 'self' ${website}`) },
+    );
   }
 
   return weiter('/admin');

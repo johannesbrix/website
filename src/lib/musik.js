@@ -14,38 +14,40 @@
       <button data-flieger class="flieger" type="button" aria-label="Platte und Musik anhalten">
         <span class="scheibe">…Etikett, Spindel…</span><span class="glanz"></span>
       </button>
-      <button data-flieger-weg class="flieger-weg" type="button" hidden>Ausblenden</button>
     </div>
 
-    Im Footer:
+    Im Footer (beliebig viele, z. B. die Platte und ein Play-Knopf):
     <button data-platte class="platte" type="button" aria-label="Song abspielen">…</button>
+    Optional ein Text, der beim Abspielen „Läuft: Titel – Interpret“ zeigt:
     <p data-platte-text>Zum Abspielen tippen</p>
-    <button data-flieger-schalter type="button" hidden>Fliegende Platte ausblenden</button>
+    Schalter für die fliegende Platte (Footer, Menü), mit aria-checked:
+    <button data-flieger-schalter role="switch" aria-checked="true" type="button" hidden>…</button>
 
-    Seiten, auf denen die Platte nicht fliegen soll (z. B. die Brixmap): <body data-platte-parken>
+    Seiten, auf denen die Platte nicht fliegen soll: <body data-flieger-modus="parken"> (parkt unten
+    rechts) oder <body data-flieger-modus="weg"> (auf dieser Seite ausgeblendet, z. B. über der Brixmap).
 
   Verhalten:
-  - Beim Laden wird versucht, die Musik abzuspielen. Browser erlauben Ton meist erst nach
-    der ersten Berührung. Dann startet sie beim ersten Tippen, Klicken oder Tastendruck
-    irgendwo auf der Seite (außer auf einer der beiden Platten).
-  - Die fliegende Platte prallt an den Bildschirmrändern ab. Ein Tippen darauf schaltet um
-    wie die Footer-Platte: Läuft Musik, halten Musik und Platte an, und sie bleibt an ihrer
-    Stelle stehen. Läuft keine Musik, startet der Tipp sie.
-  - Steht die Platte, erscheint daneben „Ausblenden“. Ausgeblendet bleibt sie auch beim
-    nächsten Besuch weg, bis man im Footer „Fliegende Platte zeigen“ wählt. Ohne sichtbare
-    Platte gibt es kein Autoplay; die Musik startet dann nur über die Footer-Platte.
-  - Die Footer-Platte schaltet dieselbe Musik an und aus.
+  - Die Musik startet nur über die Platten und den Player (Johannes, 22.11.2026: „einzig und
+    allein durch die Schallplatte und das Modul unten“). Kein Autoplay, und ein Tippen irgendwo
+    sonst auf der Seite (Karte, Filter, Menü) startet nichts.
+  - Die fliegende Platte prallt an den Bildschirmrändern ab, als Einladung zum Antippen. Ein Tippen
+    darauf schaltet um wie die Footer-Platte: Läuft keine Musik, startet der Tipp sie. Läuft Musik,
+    halten Musik und Platte an, und sie bleibt an ihrer Stelle stehen.
+  - Der Schalter im Footer-Player blendet die fliegende Platte aus und wieder ein. Ausgeblendet
+    bleibt sie auch beim nächsten Besuch weg; die Musik startet dann nur über den Player.
+  - Die Footer-Platte und der Play-Knopf schalten dieselbe Musik an und aus. Alle [data-platte]
+    bekommen data-laeuft="ja|nein", damit CSS Play/Pause und den Equalizer zeigen kann.
   - Beide Platten drehen sich genau dann, wenn Musik läuft. Pausieren hält Drehwinkel und
     Song-Position fest, weiterspielen macht dort weiter.
   - „Angehalten“, „ausgeblendet“ und die Position der fliegenden Platte merkt sich der Browser
     (localStorage), Song-Position und Drehwinkel für die Sitzung (sessionStorage).
   - prefers-reduced-motion: keine Bewegung, keine Drehung. Die fliegende Platte parkt unten
-    rechts und bleibt der Ein- und Ausschalter. Auf Seiten mit data-platte-parken parkt sie
-    ebenfalls, dreht sich aber weiter.
+    rechts und bleibt der Ein- und Ausschalter. Auf Seiten mit data-flieger-modus="parken" parkt sie
+    ebenfalls, dreht sich aber weiter; bei data-flieger-modus="weg" ist sie dort nicht zu sehen.
   - Ohne Song (kein data-song oder leere src): keine fliegende Platte, die Footer-Platte
     dreht sich beim Tippen nur.
-  - Ohne fliegende Platte (plattenteller.fliegende_platte: false): kein Autoplay, die Musik
-    startet nur über die Footer-Platte.
+  - Ohne fliegende Platte (plattenteller.fliegende_platte: false) startet die Musik nur über
+    den Player im Footer.
 */
 (() => {
   if (window.__jbMusik) return;
@@ -56,8 +58,6 @@
   const EINBLENDEN_MS = 800;
   const RAND = 16; // Abstand der geparkten Platte zum Rand
   const SCHLUESSEL = 'jb-platte';
-  const STARTER = ['pointerdown', 'pointerup', 'keydown', 'click'];
-  const STEUERUNG = '[data-flieger],[data-platte],[data-flieger-weg],[data-flieger-schalter]';
 
   const lesen = (art) => {
     try {
@@ -76,25 +76,25 @@
   const sitzung = lesen('sessionStorage'); // { zeit, winkel, vx, vy }
   const reduziert = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-  let an = dauerhaft.an !== false; // Wunsch des Besuchers: Musik und Platte laufen
+  let an = dauerhaft.an !== false; // die Platte fliegt (Musik erst nach einem Tipp auf eine Platte)
   let versteckt = dauerhaft.versteckt === true; // fliegende Platte ausgeblendet
   let ruhig = false; // die aktuelle Seite will die Platte geparkt haben
+  let seiteOhne = false; // die aktuelle Seite zeigt die fliegende Platte nicht
   let winkel = Number(sitzung.winkel) || 0;
   let x = 0, y = 0, vx = 0, vy = 0;
   let masse = { g: 56, bx: 0, by: 0 };
-  let audio = null, flieger = null, wegKnopf = null, platten = [], texte = [], schalter = [], scheiben = [];
+  let audio = null, flieger = null, platten = [], texte = [], schalter = [], scheiben = [];
   let ohneSong = true, eingerichtet = false, positioniert = false, titel = '';
   let raf = 0, letzt = 0;
 
   const laeuft = () => !ohneSong && !audio.paused;
   const dreht = () => (ohneSong ? an : laeuft());
   const geparkt = () => reduziert.matches || ruhig;
-  const sichtbar = () => Boolean(flieger) && !ohneSong && !versteckt;
+  const sichtbar = () => Boolean(flieger) && !ohneSong && !versteckt && !seiteOhne;
 
   function elementeSuchen() {
     audio = document.querySelector('audio[data-song]');
     flieger = document.querySelector('[data-flieger]');
-    wegKnopf = document.querySelector('[data-flieger-weg]');
     platten = [...document.querySelectorAll('[data-platte]')];
     texte = [...document.querySelectorAll('[data-platte-text]')];
     schalter = [...document.querySelectorAll('[data-flieger-schalter]')];
@@ -102,15 +102,17 @@
       if (t.dataset.aus === undefined) t.dataset.aus = t.textContent;
     });
     scheiben = [...platten, flieger].filter(Boolean).map((b) => b.querySelector('.scheibe')).filter(Boolean);
-    ruhig = document.body.hasAttribute('data-platte-parken');
+    // Bewusst nicht data-platte: das ist der Play-Knopf, und am <body> würde jeder Klick umschalten
+    const modus = document.body.dataset.fliegerModus || '';
+    ruhig = modus === 'parken';
+    seiteOhne = modus === 'weg';
   }
 
   function einrichten() {
     if (eingerichtet) return;
     eingerichtet = true;
     ohneSong = !audio || !audio.getAttribute('src');
-    // Ohne Song nichts abspielen. Ohne (sichtbare) fliegende Platte kein Autoplay: dann startet
-    // die Musik nur über die Footer-Platte.
+    // Ohne Song nichts abspielen. Ohne (sichtbare) fliegende Platte fliegt auch nichts.
     if (ohneSong || !flieger || versteckt) an = false;
     if (ohneSong) return;
     const t = audio.dataset.titel || '';
@@ -161,7 +163,6 @@
       .play()
       .then(() => {
         einblenden();
-        weg();
         return true;
       })
       .catch(() => {
@@ -187,10 +188,7 @@
   // Fliegende Platte aus- oder wieder einblenden. Die Musik läuft dabei unverändert weiter.
   function verstecken(neu) {
     versteckt = neu;
-    if (versteckt) {
-      an = laeuft();
-      weg();
-    }
+    if (versteckt) an = laeuft();
     if (flieger) flieger.hidden = !sichtbar(); // vor dem Messen sichtbar machen
     if (flieger && sichtbar() && !positioniert) {
       messen();
@@ -202,19 +200,9 @@
     aktualisieren();
   }
 
-  // Erste Berührung irgendwo startet die Musik, falls der Browser Autoplay blockiert hat
-  function ersteBeruehrung(e) {
-    if (!an || ohneSong || versteckt || !audio.paused) return weg();
-    if (e.target.closest && e.target.closest(STEUERUNG)) return;
-    spielen();
-  }
-  const lauschen = () => STARTER.forEach((t) => window.addEventListener(t, ersteBeruehrung, true));
-  const weg = () => STARTER.forEach((t) => window.removeEventListener(t, ersteBeruehrung, true));
-
   document.addEventListener('click', (e) => {
     const ziel = e.target.closest ? e.target : null;
     if (!ziel) return;
-    if (ziel.closest('[data-flieger-weg]')) return verstecken(true);
     if (ziel.closest('[data-flieger-schalter]')) return verstecken(!versteckt);
     // Beide Platten schalten um: Läuft Musik, hält ein Tipp alles an, sonst startet er sie.
     if (ziel.closest('[data-flieger],[data-platte]')) {
@@ -270,15 +258,6 @@
       y = Math.min(Math.max(0, y), masse.by);
       flieger.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
     }
-    // „Ausblenden“ links neben der stehenden Platte, ohne Platz dort rechts davon
-    if (wegKnopf && !wegKnopf.hidden) {
-      const b = wegKnopf.offsetWidth;
-      const h = wegKnopf.offsetHeight;
-      const breite = document.documentElement.clientWidth;
-      const px = x - b - 10 >= 8 ? x - b - 10 : Math.min(x + masse.g + 10, breite - b - 8);
-      const py = Math.min(Math.max(8, y + (masse.g - h) / 2), window.innerHeight - h - 8);
-      wegKnopf.style.transform = `translate3d(${px.toFixed(1)}px, ${py.toFixed(1)}px, 0)`;
-    }
     const r = `rotate(${winkel.toFixed(2)}deg)`;
     scheiben.forEach((s) => (s.style.transform = r));
   }
@@ -302,17 +281,19 @@
 
   function aktualisieren() {
     const d = dreht();
-    platten.forEach((b) => b.setAttribute('aria-label', d ? 'Song anhalten' : 'Song abspielen'));
+    platten.forEach((b) => {
+      b.setAttribute('aria-label', d ? 'Song anhalten' : 'Song abspielen');
+      b.dataset.laeuft = d ? 'ja' : 'nein';
+    });
     texte.forEach((t) => (t.textContent = !ohneSong && d ? `Läuft: ${titel}` : t.dataset.aus));
     if (flieger) {
       flieger.hidden = !sichtbar();
-      flieger.setAttribute('aria-label', an ? 'Platte und Musik anhalten' : 'Platte und Musik starten');
+      flieger.setAttribute('aria-label', laeuft() ? 'Platte und Musik anhalten' : 'Musik abspielen');
       flieger.classList.toggle('steht', !an);
     }
-    if (wegKnopf) wegKnopf.hidden = !(sichtbar() && positioniert && !an);
     schalter.forEach((s) => {
       s.hidden = ohneSong || !flieger;
-      s.textContent = versteckt ? 'Fliegende Platte zeigen' : 'Fliegende Platte ausblenden';
+      s.setAttribute('aria-checked', String(!versteckt));
     });
     zeichnen();
     wecken();
@@ -342,12 +323,6 @@
     aktualisieren();
   }
 
-  function versuchen() {
-    if (ohneSong || !an || !flieger || versteckt) return;
-    lauschen();
-    spielen();
-  }
-
   window.addEventListener('resize', () => {
     const alt = { ...masse };
     messen();
@@ -373,6 +348,4 @@
   } else {
     seiteGewechselt();
   }
-  if (document.readyState === 'complete') versuchen();
-  else window.addEventListener('load', versuchen, { once: true });
 })();

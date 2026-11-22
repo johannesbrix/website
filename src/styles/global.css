@@ -30,6 +30,14 @@
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+/* Ersatzschrift, bis Literata geladen ist: Georgia, auf die Laufweite von Literata gebracht (gemessen:
+   Literata 400 ist 6,3 % breiter). So brechen Absätze gleich um, und nichts springt beim Schriftwechsel. */
+@font-face {
+  font-family: 'Literata Ersatz';
+  src: local('Georgia');
+  size-adjust: 106.3%;
+}
+
 /* Tokens: hell und dunkel tauschen die Rollen */
 :root {
   color-scheme: light dark;
@@ -40,7 +48,7 @@
   --flaeche: #f1f1ef;
   --orange: #fc4c02;
   --grotesk: 'Familjen Grotesk', 'Helvetica Neue', Arial, sans-serif;
-  --lese: 'Literata', Georgia, serif;
+  --lese: 'Literata', 'Literata Ersatz', Georgia, serif;
   --r-gross: 20px;
   --r: 14px;
   --r-klein: 10px;
@@ -149,6 +157,122 @@ html:has(dialog[open]) {
   top: 16px;
 }
 
+/* Icons (src/lib/icons.ts): Größe folgt der Schrift */
+.icon {
+  display: inline-flex;
+  flex: none;
+  width: 1.25em;
+  height: 1.25em;
+}
+.icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Runde Icon-Knöpfe, 44 px: Menü, Schließen, Social, Schalter */
+.icon-knopf {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--flaeche);
+  color: var(--text);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+.icon-knopf .icon {
+  width: 20px;
+  height: 20px;
+}
+.icon-knopf[aria-checked='true'] {
+  background: var(--text);
+  color: var(--grund);
+}
+@media (hover: hover) {
+  .icon-knopf:hover {
+    background: var(--text);
+    color: var(--grund);
+  }
+}
+.sozial {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Schalter (z. B. „Fliegende Platte“ im Menü) */
+.schalter {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: 500 16px var(--grotesk);
+  cursor: pointer;
+}
+.schalter-spur {
+  position: relative;
+  flex: none;
+  width: 44px;
+  height: 26px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 22%, var(--grund));
+  transition: background-color 0.2s;
+}
+.schalter-spur::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--grund);
+  transition: transform 0.2s;
+}
+.schalter[aria-checked='true'] .schalter-spur {
+  background: var(--text);
+}
+.schalter[aria-checked='true'] .schalter-spur::after {
+  transform: translateX(18px);
+}
+
+/* Brixmap-Pins: Orange mit Sonne = Johannes, Anthrazit mit Rakete = Empfehlung eines Besuchers.
+   Gleiches Aussehen auf der Karte, in der Liste und auf der Startseite. */
+.pin {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  box-sizing: border-box;
+  width: 30px;
+  height: 30px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+}
+.pin .icon {
+  width: 15px;
+  height: 15px;
+}
+.pin-ich {
+  background: var(--orange);
+  color: #ffffff;
+}
+.pin-empfehlung {
+  background: #373634;
+  color: #ffffff;
+}
+
 /* Chips: Filter (Projekte, Brixmap) und Sprungleiste (Rise & Shine) */
 .chips {
   display: flex;
@@ -173,8 +297,15 @@ html:has(dialog[open]) {
   white-space: nowrap;
   cursor: pointer;
 }
-.chip:hover {
-  border-color: var(--text);
+.chip .icon {
+  width: 18px;
+  height: 18px;
+  margin-left: -2px;
+}
+@media (hover: hover) {
+  .chip:hover {
+    border-color: var(--text);
+  }
 }
 .chip[aria-current],
 .chip[aria-pressed='true'] {
@@ -188,6 +319,7 @@ html:has(dialog[open]) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   min-height: 48px;
   padding: 0 22px;
   border: 0;
@@ -202,8 +334,15 @@ html:has(dialog[open]) {
   background: var(--flaeche);
   color: var(--text);
 }
-.pill:hover {
-  opacity: 0.9;
+.pill .icon {
+  width: 20px;
+  height: 20px;
+  margin-left: -4px;
+}
+@media (hover: hover) {
+  .pill:hover {
+    opacity: 0.88;
+  }
 }
 .pill:disabled {
   opacity: 0.45;
@@ -307,6 +446,17 @@ img.bild {
   height: auto;
   object-fit: cover;
 }
+/* Noch kein Foto: ruhige Fläche mit dem Icon des Bereichs */
+.bild-leer {
+  display: grid;
+  place-items: center;
+  color: color-mix(in srgb, var(--text) 42%, var(--flaeche));
+}
+.bild-leer .icon {
+  width: clamp(22px, 24%, 64px);
+  height: auto;
+  aspect-ratio: 1;
+}
 
 /* Status: Läuft (orange), Geplant (Ring, leise), Fertig (voll), Pausiert (Ring, leise) */
 .status {
@@ -352,12 +502,44 @@ img.bild {
 .zurueck:hover {
   color: var(--text);
 }
+.beitrag-kopf.mit-cover {
+  padding-top: 0;
+}
+/* Icon der Seite wie bei Notion: über dem Titel, mit Cover ragt es in dessen unteren Rand */
+.seiten-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 14px;
+  border-radius: 20px;
+  background: var(--flaeche);
+  color: var(--text);
+}
+.seiten-icon .icon {
+  width: 30px;
+  height: 30px;
+}
+.seiten-icon.auf-cover {
+  position: relative;
+  margin-top: -36px;
+  border: 4px solid var(--grund);
+}
+@container (min-width: 761px) {
+  .seiten-icon.auf-cover {
+    margin-left: 24px;
+  }
+}
+/* Groß, aber das längste Wort passt immer in die Zeile: --laengstes (Zeichen) setzt die Seite,
+   0,6 em ist eine großzügige mittlere Zeichenbreite der fetten Familjen Grotesk */
 .beitrag-titel {
   margin-top: 6px;
   font-weight: 700;
-  font-size: clamp(50px, 8cqi, 116px);
+  font-size: max(30px, min(clamp(50px, 8cqi, 116px), calc(min(1280px, 100cqi - 2 * clamp(20px, 4.4cqi, 64px)) / (var(--laengstes, 6) * 0.6))));
   line-height: 0.94;
   letter-spacing: -0.05em;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
 }
 .tags {
   display: flex;
@@ -384,15 +566,6 @@ img.bild {
   margin-top: 2px;
   font-size: 16px;
   font-weight: 600;
-}
-.titelbild .bild {
-  aspect-ratio: 3 / 2;
-  border-radius: var(--r-gross);
-}
-.bildtext {
-  margin-top: 10px;
-  font-size: 14px;
-  color: var(--leise);
 }
 .story {
   padding-top: clamp(32px, 5cqi, 64px);

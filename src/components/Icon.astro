@@ -1,0 +1,14 @@
+---
+// Ein Icon aus src/lib/icons.ts. Die Größe folgt der Schriftgröße (1em) oder der Klasse.
+// Icons sind Dekoration (aria-hidden); Knöpfe und Links brauchen ihren eigenen Namen.
+import { ICONS, type IconName } from '../lib/icons';
+
+interface Props {
+  name: IconName;
+  class?: string;
+}
+
+const { name, class: klasse } = Astro.props;
+---
+
+<span class:list={['icon', klasse]} set:html={ICONS[name]} />

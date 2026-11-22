@@ -1,0 +1,145 @@
+---
+// Ein Regal: eine waagerecht wischbare Reihe (Zitate, Videos, Reden, Bücher auf Rise & Shine).
+// Egal wie viele Einträge es gibt, jede Reihe bleibt gleich hoch, und man kommt immer schnell an
+// den Inhalt darunter (Johannes, 22.11.2026: nicht alles über Filter laufen lassen).
+// Am Handy wischt man; mit Maus blättern zwei runde Knöpfe, die ohne Überlauf verschwinden.
+// Die Einträge (<li>) kommen über den Slot und werden auf der Seite gestaltet; ihre Breite setzt
+// die Seite über --breite.
+import Icon from './Icon.astro';
+
+interface Props {
+  id: string;
+  titel: string;
+  anzahl: number;
+  class?: string;
+}
+
+const { id, titel, anzahl, class: klasse } = Astro.props;
+---
+
+<section class:list={['rahmen', 'abschnitt', 'regal', klasse]} id={id} aria-labelledby={`${id}-titel`} data-regal>
+  <div class="regal-kopf">
+    <h2 class="titel regal-titel" id={`${id}-titel`}>
+      {titel}
+      <span class="anzahl">{anzahl}</span>
+    </h2>
+    <div class="regal-knoepfe" data-regal-knoepfe hidden>
+      <button class="icon-knopf" type="button" aria-label={`${titel}: zurückblättern`} data-regal-zurueck>
+        <Icon name="zurueck" />
+      </button>
+      <button class="icon-knopf" type="button" aria-label={`${titel}: weiterblättern`} data-regal-weiter>
+        <Icon name="vor" />
+      </button>
+    </div>
+  </div>
+  <ul class="liste regal-reihe" data-regal-reihe>
+    <slot />
+  </ul>
+</section>
+
+<style>
+  .regal {
+    --rand: clamp(20px, 4.4cqi, 64px);
+  }
+  .regal-kopf {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: clamp(14px, 2cqi, 24px);
+  }
+  .regal-titel {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+  }
+  .anzahl {
+    display: inline-grid;
+    place-items: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 8px;
+    box-sizing: border-box;
+    border-radius: 999px;
+    background: var(--flaeche);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0;
+  }
+  .regal-knoepfe {
+    display: none;
+    gap: 8px;
+  }
+  /* Nur mit Maus; am Handy wischt man */
+  @media (hover: hover) and (pointer: fine) {
+    .regal-knoepfe:not([hidden]) {
+      display: flex;
+    }
+  }
+  .regal-knoepfe .icon-knopf:disabled {
+    opacity: 0.35;
+    cursor: default;
+    background: var(--flaeche);
+    color: var(--text);
+  }
+
+  /* Die Reihe läuft bis an den Bildschirmrand, die Einträge rasten links ein */
+  .regal-reihe {
+    display: flex;
+    gap: clamp(12px, 1.6cqi, 20px);
+    margin-inline: calc(-1 * var(--rand));
+    padding: 6px var(--rand) 4px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--rand);
+    scrollbar-width: none;
+  }
+  .regal-reihe::-webkit-scrollbar {
+    display: none;
+  }
+  /* position: relative hält versteckte Texte (.nur-sr) in der Reihe, sonst wird die Seite breiter */
+  .regal-reihe > :global(li) {
+    position: relative;
+    flex: none;
+    width: var(--breite, 280px);
+    scroll-snap-align: start;
+  }
+</style>
+
+<script>
+  // Blätter-Knöpfe: um eine knappe Breite weiter, aus bei Anfang/Ende, weg ohne Überlauf
+  function regaleEinrichten() {
+    const ruhig = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.querySelectorAll<HTMLElement>('[data-regal]').forEach((regal) => {
+      if (regal.dataset.bereit !== undefined) return;
+      regal.dataset.bereit = '';
+      const reihe = regal.querySelector<HTMLElement>('[data-regal-reihe]');
+      const knoepfe = regal.querySelector<HTMLElement>('[data-regal-knoepfe]');
+      const zurueck = regal.querySelector<HTMLButtonElement>('[data-regal-zurueck]');
+      const weiter = regal.querySelector<HTMLButtonElement>('[data-regal-weiter]');
+      if (!reihe || !knoepfe || !zurueck || !weiter) return;
+      const stand = () => {
+        const ende = reihe.scrollWidth - reihe.clientWidth;
+        knoepfe.hidden = ende <= 2;
+        zurueck.disabled = reihe.scrollLeft <= 2;
+        weiter.disabled = reihe.scrollLeft >= ende - 2;
+      };
+      const blaettern = (richtung: number) =>
+        reihe.scrollBy({ left: richtung * reihe.clientWidth * 0.85, behavior: ruhig ? 'auto' : 'smooth' });
+      zurueck.addEventListener('click', () => blaettern(-1));
+      weiter.addEventListener('click', () => blaettern(1));
+      reihe.addEventListener('scroll', stand, { passive: true });
+      new ResizeObserver(stand).observe(reihe);
+      stand();
+    });
+  }
+
+  const w = window as Window & { __jbRegal?: boolean };
+  if (!w.__jbRegal) {
+    w.__jbRegal = true;
+    document.addEventListener('astro:page-load', regaleEinrichten);
+  }
+  regaleEinrichten();
+</script>

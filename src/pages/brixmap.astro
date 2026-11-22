@@ -1,14 +1,19 @@
 ---
-// Brixmap: Johannes' Orte (☀️), Empfehlungen von Besuchern (💌, erst nach Freigabe sichtbar)
-// und Empfehlungen, die Johannes besucht hat (✅, mit seinem Kommentar).
-// Die Kartenkacheln kommen von OpenStreetMap (nur auf dieser Seite). Empfehlen, Freigeben und die
-// Ortssuche laufen über den kleinen Server in api/ (docs/brixmap.md). Ohne Server zeigt die Karte
-// nur Johannes' Orte.
+// Brixmap: Johannes' Orte (orange, Sonne) und Empfehlungen von Besuchern (anthrazit, Rakete).
+// Aufgebaut wie eine Karten-App: am Handy die Karte und darunter die Liste, ab 1000 px die Liste links
+// und die Karte rechts. Ein Tipp auf einen Pin öffnet die Ortskarte. „Empfehlen“ legt einen Pin in die
+// Kartenmitte, unter dem man die Karte verschiebt; danach kommt das Formular als Sheet. Empfehlungen
+// erscheinen sofort. Auf Johannes' freigeschaltetem Gerät heißt der Knopf „Ort setzen“, der Pin ist
+// die Sonne, und an jeder Ortskarte kann er löschen (docs/brixmap.md).
+// Die Kartenkacheln kommen von OpenStreetMap (nur auf dieser Seite). Empfehlen und die Ortssuche laufen
+// über den kleinen Server in api/. Ohne Server zeigt die Karte nur Johannes' Orte.
 import 'leaflet/dist/leaflet.css';
 import { getEntry, render } from 'astro:content';
 import Basis from '../layouts/Basis.astro';
+import Icon from '../components/Icon.astro';
+import Pin from '../components/Pin.astro';
 import { klartext, kurz, meineOrte } from '../lib/inhalt';
-import { ARTEN, KATEGORIEN } from '../lib/brixmap';
+import { ARTEN, KATEGORIE_IDS, KATEGORIEN, type Art } from '../lib/brixmap';
 import { API } from '../lib/dienste';
 
 const seite = await getEntry('seiten', 'brixmap');
@@ -16,348 +21,829 @@ const Intro = seite?.body?.trim() ? (await render(seite)).Content : undefined;
 const text = klartext(seite?.body);
 const beschreibung = text && !text.startsWith('[') ? kurz(text) : undefined;
 const orte = await meineOrte();
+const arten = Object.keys(ARTEN) as Art[];
 ---
 
-<Basis titel="Brixmap" beschreibung={beschreibung} platteParken>
+<Basis titel={seite?.data.titel ?? 'Brixmap'} beschreibung={beschreibung} platte="weg">
   <link rel="preconnect" href="https://tile.openstreetmap.de" slot="head" />
-  <div class="rahmen brixmap-kopf">
-    <h1 class="brixmap-titel">Brixmap</h1>
-    {
-      Intro && (
-        <div class="text brixmap-intro">
-          <Intro />
-        </div>
-      )
-    }
-  </div>
 
-  <div class="rahmen leiste" data-leiste>
-    <div class="chips" role="group" aria-label="Orte filtern">
-      <button class="chip" type="button" aria-pressed="true" data-filter="alle">Alle</button>
+  <div class="brixmap">
+    <header class="bm-kopf">
+      <h1 class="bm-titel">Brixmap<span class="punkt" aria-hidden="true"></span></h1>
       {
-        Object.entries(ARTEN).map(([art, a]) => (
-          <button class="chip" type="button" aria-pressed="false" data-filter={art}>
-            <span aria-hidden="true">{a.emoji}</span>
-            {a.name}
-          </button>
-        ))
+        Intro && (
+          <div class="text bm-intro">
+            <Intro />
+          </div>
+        )
       }
-    </div>
-    {API && <button class="pill" type="button" data-empfehlen>Ort empfehlen</button>}
-  </div>
+    </header>
 
-  {
-    API && (
-      <div class="rahmen platzieren" data-platzieren hidden>
-        <p class="platzieren-text" data-platzieren-text aria-live="polite">
-          Tippe auf die Karte, wo der Ort liegt, oder suche ihn.
-        </p>
-        <form class="suche" data-suche role="search">
-          <label class="nur-sr" for="ortssuche">
-            Ort oder Adresse suchen
-          </label>
-          <input id="ortssuche" name="q" type="search" placeholder="Ort oder Adresse suchen" autocomplete="off" enterkeyhint="search" />
-          <button class="pill leise" type="submit">Suchen</button>
-        </form>
-        <ul class="liste treffer" data-treffer aria-label="Suchergebnisse" />
-        <div class="platzieren-knoepfe">
-          <button class="pill" type="button" data-weiter disabled>Weiter</button>
-          <button class="pill leise" type="button" data-standort>Mein Standort</button>
-          <button class="pill leise" type="button" data-abbrechen>Abbrechen</button>
+    <div class="buehne" data-buehne>
+      <div class="karte" data-karte data-orte={JSON.stringify(orte)} data-api={API || undefined} role="region" aria-label="Karte"></div>
+
+      {/* Zugleich Legende: ohne Auswahl sind alle Orte zu sehen, ein Tipp zeigt nur diese Art */}
+      <div class="oben">
+        <div class="filter" role="group" aria-label="Orte filtern">
+          {
+            arten.map((art) => (
+              <button class="chip" type="button" aria-pressed="false" data-filter={art}>
+                <Pin art={art} />
+                {ARTEN[art].name}
+              </button>
+            ))
+          }
         </div>
       </div>
-    )
-  }
 
-  <div class="karte" data-karte data-orte={JSON.stringify(orte)} data-api={API || undefined} role="region" aria-label="Karte der Orte">
+      <div class="unten">
+        <a class="pill leise zur-liste" href="#orte"><Icon name="liste" />Liste</a>
+        {
+          API && (
+            <button class="pill" type="button" data-empfehlen>
+              <Icon name="plus" />
+              <span data-empfehlen-text>Empfehlen</span>
+            </button>
+          )
+        }
+      </div>
+
+      {/* Ortskarte: kompakt, lange Texte erst nach „Mehr“. Route und Schließen als Icons oben rechts. */}
+      <article class="ortkarte" data-ortkarte tabindex="-1" aria-labelledby="ortkarte-name" hidden>
+        <div class="ortkarte-kopf">
+          <p class="ortkarte-art"><span data-k="pin"></span><span data-k="art"></span></p>
+          <a class="icon-knopf" href="#" aria-label="Route planen" title="Route planen" data-k="route"><Icon name="route" /></a>
+          <button class="icon-knopf" type="button" aria-label="Schließen" data-ortkarte-zu>
+            <Icon name="schliessen" />
+          </button>
+        </div>
+        <h2 class="ortkarte-name" id="ortkarte-name" data-k="name"></h2>
+        <p class="ortkarte-kategorie" data-k="kategorie" hidden></p>
+        <p class="ortkarte-notiz kurz" data-k="notiz" hidden></p>
+        <button class="ortkarte-mehr" type="button" data-k="mehr" hidden>Mehr anzeigen</button>
+        <a class="pill leise ortkarte-link" href="#" data-k="link" hidden>
+          <Icon name="weiter" class="intern" />
+          <Icon name="extern" class="extern" />
+          <span data-k="linktext"></span>
+        </a>
+        {/* Nur auf Johannes' freigeschaltetem Gerät (docs/brixmap.md) */}
+        {
+          API && (
+            <div class="verwalten" data-k="verwalten" hidden>
+              <button class="pill leise loeschen" type="button" data-k="loeschen">
+                <Icon name="loeschen" />
+                <span data-k="loeschen-text">Löschen</span>
+              </button>
+            </div>
+          )
+        }
+      </article>
+
+      {
+        API && (
+          <>
+            {/* Pin in der Kartenmitte: Rakete für Besucher, auf Johannes' Gerät die Sonne (geraetAnzeigen) */}
+            <div class="fadenkreuz" aria-hidden="true">
+              <span class="nadel" data-nadel>
+                <Pin art="empfehlung" />
+              </span>
+              <span class="nadel-schatten" />
+            </div>
+            <div class="wahl-oben">
+              <form class="suche" role="search" data-suche>
+                <button class="suche-los" type="submit" aria-label="Suchen">
+                  <Icon name="suche" />
+                </button>
+                <label class="nur-sr" for="ortssuche">
+                  Ort oder Adresse suchen
+                </label>
+                <input id="ortssuche" name="q" type="search" placeholder="Ort oder Adresse suchen" autocomplete="off" enterkeyhint="search" />
+              </form>
+              <button class="icon-knopf schwebend" type="button" aria-label="Mein Standort" title="Mein Standort" data-standort>
+                <Icon name="standort" />
+              </button>
+              <ul class="liste treffer" aria-label="Suchergebnisse" data-treffer hidden />
+            </div>
+            <div class="wahl-unten">
+              <p class="wahl-text" aria-live="polite" data-wahl-text>
+                Schieb die Karte, bis der Pin auf dem Ort sitzt.
+              </p>
+              <div class="wahl-knoepfe">
+                <button class="pill leise" type="button" data-abbrechen>
+                  Abbrechen
+                </button>
+                <button class="pill" type="button" data-hier>
+                  Hier ist es
+                </button>
+              </div>
+            </div>
+          </>
+        )
+      }
+
+      <p class="toast" role="status" data-toast></p>
+    </div>
+
+    <section class="bm-liste" id="orte" aria-labelledby="orte-titel">
+      <h2 class="bm-liste-titel" id="orte-titel">Orte <span class="anzahl" data-anzahl>{orte.length}</span></h2>
+      <ul class="liste ortsliste" data-ortsliste>
+        {
+          orte.map((ort) => (
+            <li data-art={ort.art}>
+              <button class="ort" type="button" data-zeige={ort.id}>
+                <Pin art={ort.art} />
+                <span class="ort-text">
+                  <span class="ort-name">{ort.name}</span>
+                  <span class="ort-meta">
+                    <span>{ARTEN[ort.art].name}</span>
+                    {ort.kategorie && <span>{KATEGORIEN[ort.kategorie]}</span>}
+                  </span>
+                  {ort.notiz && <span class="ort-notiz">{ort.notiz}</span>}
+                </span>
+              </button>
+            </li>
+          ))
+        }
+      </ul>
+      <div class="leer" data-leer hidden={orte.length > 0}>
+        <p>Noch keine Orte.</p>
+        {
+          API && (
+            <button class="pill leise" type="button" data-empfehlen>
+              <Icon name="plus" />
+              Ort empfehlen
+            </button>
+          )
+        }
+      </div>
+    </section>
   </div>
 
-  <section class="rahmen abschnitt" aria-labelledby="orte-titel">
-    <h2 class="titel" id="orte-titel">Orte</h2>
-    <ul class="liste ortsliste" data-ortsliste>
-      {
-        orte.map((ort) => (
-          <li data-art={ort.art}>
-            <span class="ort">
-              <span class="ort-pin" aria-hidden="true">
-                {ARTEN[ort.art].emoji}
-              </span>
-              <span>
-                <span class="ort-name">{ort.name}</span>
-                <span class="ort-meta">
-                  <span>{ARTEN[ort.art].name}</span>
-                  {ort.kategorie && <span>{KATEGORIEN[ort.kategorie]}</span>}
-                </span>
-                {ort.notiz && <span class="ort-notiz">{ort.notiz}</span>}
-              </span>
-            </span>
-          </li>
-        ))
-      }
-    </ul>
-    <p class="leer" data-leer hidden={orte.length > 0}>Noch keine Orte.</p>
-  </section>
+  {/* Vorlagen für das Kartenskript: dieselben Pins und Icons wie im HTML */}
+  {arten.map((art) => <template data-vorlage={`pin-${art}`}><Pin art={art} /></template>)}
+  {KATEGORIE_IDS.map((id) => <template data-vorlage={`kategorie-${id}`}><Icon name={id} /></template>)}
 
   {
     API && (
-      <dialog class="empfehlen" aria-labelledby="empfehlen-titel" data-dialog>
-        <div class="empfehlen-kopf">
-          <h2 class="empfehlen-titel" id="empfehlen-titel">
+      <dialog class="sheet" aria-labelledby="empfehlen-titel" data-dialog>
+        <div class="sheet-kopf">
+          <h2 class="sheet-titel" id="empfehlen-titel" data-sheet-titel>
             Ort empfehlen
           </h2>
-          <button class="pill leise" type="button" data-schliessen>
-            Schließen
+          <button class="icon-knopf" type="button" aria-label="Schließen" data-schliessen>
+            <Icon name="schliessen" />
           </button>
         </div>
         <form class="formular" data-formular>
-          <p class="gewaehlt" data-gewaehlt />
           <label class="feld">
-            <span>Name des Orts</span>
+            <span class="feld-name">Name des Orts</span>
             <input name="name" required minlength="2" maxlength="80" autocomplete="off" />
           </label>
           <fieldset class="feld">
-            <legend>Was ist es?</legend>
+            <legend class="feld-name">Was ist es?</legend>
             <div class="chips">
-              {Object.entries(KATEGORIEN).map(([id, name]) => (
+              {KATEGORIE_IDS.map((id) => (
                 <label class="chip wahl">
                   <input type="radio" name="kategorie" value={id} required />
-                  {name}
+                  <Icon name={id} />
+                  {KATEGORIEN[id]}
                 </label>
               ))}
             </div>
           </fieldset>
           <label class="feld">
-            <span>Warum empfiehlst du ihn?</span>
+            <span class="feld-name" data-notiz-name>Warum empfiehlst du ihn?</span>
             <textarea name="notiz" required minlength="3" maxlength="300" rows="3" />
           </label>
-          <label class="feld">
-            <span>
-              Dein Name <span class="leise">(optional, steht dann bei der Empfehlung)</span>
+          <label class="feld" data-nur-besucher>
+            <span class="feld-name">
+              Dein Name <span class="leise">(optional)</span>
             </span>
-            <input name="von" maxlength="40" autocomplete="nickname" />
+            <input name="von" maxlength="40" autocomplete="given-name" />
           </label>
           <label class="honig" aria-hidden="true">
             Website
             <input name="website" tabindex="-1" autocomplete="off" />
           </label>
-          <label class="einwilligung">
+          <label class="einwilligung" data-nur-besucher>
             <input type="checkbox" name="einwilligung" required />
             <span>
-              Ich bin einverstanden, dass meine Empfehlung und, falls angegeben, mein Name nach der Freigabe öffentlich
-              auf der Brixmap erscheinen. Mehr dazu im <a href="/datenschutz/#brixmap-und-klick-zähler">Datenschutz</a>.
+              Ich bin einverstanden, dass meine Empfehlung und, falls angegeben, mein Name sofort öffentlich auf der Brixmap
+              erscheinen. Mehr dazu im <a href="/datenschutz/#brixmap-und-klick-zähler">Datenschutz</a>.
             </span>
           </label>
-          <p class="fehler" data-fehler role="alert" hidden />
-          <button class="pill" type="submit" data-senden>
-            Empfehlung senden
+          <p class="fehler" role="alert" data-fehler hidden />
+          <button class="pill senden" type="submit" data-senden>
+            <Icon name="rakete" />
+            Auf die Karte setzen
           </button>
         </form>
-        <div class="danke" data-danke hidden>
-          <p class="danke-titel">Danke!</p>
-          <p>Deine Empfehlung ist angekommen. Sobald sie freigegeben ist, erscheint sie auf der Karte.</p>
-          <button class="pill" type="button" data-schliessen>
-            Schließen
-          </button>
-        </div>
       </dialog>
     )
   }
 </Basis>
 
 <style>
-  .brixmap-kopf {
-    padding-block: clamp(24px, 4cqi, 56px) clamp(16px, 2cqi, 24px);
+  .brixmap {
+    --rand: clamp(20px, 4.4cqi, 64px);
+    --schatten: 0 0 0 1px color-mix(in srgb, var(--text) 9%, transparent), 0 6px 22px rgba(0, 0, 0, 0.16);
+    --geteilt: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'kopf' 'buehne' 'liste';
   }
-  .brixmap-titel {
+
+  /* Kopf */
+  .bm-kopf {
+    grid-area: kopf;
+    padding: 8px var(--rand) 22px;
+  }
+  .bm-titel {
     font-weight: 700;
-    font-size: clamp(50px, 8cqi, 116px);
-    line-height: 0.94;
+    font-size: clamp(46px, 5.4cqi, 68px);
+    line-height: 0.95;
     letter-spacing: -0.05em;
   }
-  .brixmap-intro {
-    margin-top: clamp(14px, 2cqi, 24px);
+  .bm-intro {
     max-width: 34em;
-  }
-  .leiste {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px 16px;
-    padding-bottom: 16px;
-  }
-  .leiste[hidden],
-  .platzieren[hidden] {
-    display: none;
+    margin-top: 12px;
+    font-size: 17px;
+    line-height: 1.55;
   }
 
-  /* Ort wählen */
-  .platzieren {
-    display: grid;
-    gap: 12px;
-    padding-bottom: 16px;
-  }
-  .platzieren-text {
-    font-weight: 600;
-  }
-  .suche {
-    display: flex;
-    gap: 8px;
-    max-width: 560px;
-  }
-  .suche input {
-    flex: 1;
-    min-width: 0;
-    min-height: 48px;
-    padding: 0 16px;
-    border: 1px solid color-mix(in srgb, var(--text) 28%, var(--grund));
-    border-radius: 999px;
-    background: var(--grund);
-    color: var(--text);
-    font: 400 16px var(--grotesk);
-  }
-  .treffer {
-    display: grid;
-    gap: 4px;
-    max-width: 560px;
-  }
-  .treffer :global(button) {
-    display: block;
-    width: 100%;
-    padding: 10px 14px;
-    border: 0;
-    border-radius: var(--r-klein);
+  /* Bühne: Karte mit allem, was darüber schwebt */
+  .buehne {
+    grid-area: buehne;
+    position: relative;
+    height: clamp(400px, 70svh, 720px);
+    /* Ganze Pixel, damit Leaflet die Kartenmitte genau trifft */
+    height: round(down, clamp(400px, 70svh, 720px), 1px);
+    overflow: hidden;
     background: var(--flaeche);
-    color: var(--text);
-    font: 400 15px/1.35 var(--grotesk);
-    text-align: left;
-    cursor: pointer;
-  }
-  .treffer :global(strong) {
-    font-weight: 600;
-  }
-  .platzieren-knoepfe {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  /* Karte: wie eine App fast bildschirmhoch, ein Finger bewegt sie */
-  .karte {
-    height: clamp(380px, 68svh, 760px);
-    background: var(--flaeche);
-  }
-  .karte.waehlt {
-    cursor: crosshair;
+    isolation: isolate;
   }
   /* Leaflet setzt .leaflet-container auf dasselbe Element; die Klasse hier gewinnt */
   .karte {
-    font-family: var(--grotesk);
-    font-size: 15px;
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: var(--flaeche);
+    font: 15px/1.4 var(--grotesk);
   }
-  /* Ruhige Kacheln, damit die Emojis leuchten; im Dunkelmodus dunkel */
+  /* Ruhige Kacheln, damit die Pins leuchten; im Dunkelmodus dunkel */
   .karte :global(.leaflet-tile-pane) {
-    filter: grayscale(0.85) contrast(0.95) brightness(1.03);
+    filter: grayscale(0.85) contrast(0.94) brightness(1.03);
+  }
+  /* Leaflet 1.9.4 legt die Kacheln mit plus-lighter übereinander, gegen Spalten bei krummen Positionen.
+     Die Karte steht hier dank aufGeraetepixel() auf ganzen Pixeln; plus-lighter würde dann helle
+     Linien an den Kachelgrenzen erzeugen. */
+  .karte :global(img.leaflet-tile) {
+    mix-blend-mode: normal;
   }
   @media (prefers-color-scheme: dark) {
     .karte :global(.leaflet-tile-pane) {
       filter: grayscale(0.7) invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9);
     }
   }
-  .karte :global(.pin) {
+
+  /* Pins auf der Karte: 30 px sichtbar, 44 px zum Antippen */
+  .karte :global(.marker) {
     display: grid;
     place-items: center;
-    border: 1px solid var(--linie);
-    border-radius: 50%;
-    background: var(--grund);
-    font-size: 22px;
-    line-height: 1;
   }
-  .karte :global(.pin-wahl) {
-    border: 0;
-    background: none;
-    font-size: 34px;
+  .karte :global(.marker .pin) {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 3px 10px rgba(0, 0, 0, 0.18);
+    transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.18s;
   }
-  .karte :global(.leaflet-popup-content-wrapper),
-  .karte :global(.leaflet-popup-tip) {
-    background: var(--grund);
-    color: var(--text);
-    box-shadow: none;
-    border: 1px solid var(--linie);
+  .karte :global(.marker.hervor .pin) {
+    transform: scale(1.15);
   }
-  .karte :global(.leaflet-popup-content-wrapper) {
-    border-radius: var(--r);
+  @media (hover: hover) {
+    .karte :global(.marker:hover .pin) {
+      transform: scale(1.15);
+    }
   }
-  .karte :global(.leaflet-popup-content) {
-    margin: 14px 18px;
-    line-height: 1.45;
+  .karte :global(.marker.aktiv .pin) {
+    transform: scale(1.3);
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--orange) 30%, transparent), 0 3px 12px rgba(0, 0, 0, 0.25);
   }
-  .karte :global(.leaflet-popup-close-button) {
-    width: 32px;
-    height: 32px;
-    font-size: 22px;
-    color: var(--leise);
+  .karte :global(.marker:focus-visible) {
+    outline: none;
   }
-  .karte :global(.pin-info p) {
-    margin: 0;
+  .karte :global(.marker:focus-visible .pin) {
+    outline: 2px solid var(--orange);
+    outline-offset: 3px;
   }
-  .karte :global(.pin-art) {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--leise);
-  }
-  .karte :global(.pin-name) {
-    margin-top: 2px !important;
-    font-weight: 600;
-    font-size: 19px;
-    letter-spacing: -0.01em;
-    line-height: 1.2;
-  }
-  .karte :global(.pin-notiz) {
-    margin-top: 6px !important;
-    font-family: var(--lese);
-    font-size: 16px;
-  }
-  .karte :global(.pin-klein) {
-    margin-top: 6px !important;
-    font-size: 13px;
-    color: var(--leise);
-  }
-  .karte :global(.pin-kommentar) {
-    margin-top: 10px !important;
-    padding-top: 10px;
-    border-top: 1px solid var(--linie);
-    font-family: var(--lese);
-    font-size: 16px;
-  }
-  .karte :global(.pin-info a) {
-    display: inline-block;
-    margin-top: 10px;
-    color: var(--text);
-    font-weight: 600;
-    text-decoration-color: var(--orange);
-    text-decoration-thickness: 2px;
-    text-underline-offset: 4px;
-  }
+
+  /* Bedienelemente von Leaflet */
   .karte :global(.leaflet-control-attribution) {
-    font-size: 11px;
-    background: color-mix(in srgb, var(--grund) 85%, transparent);
+    padding: 1px 8px;
+    border-radius: 8px 0 0 0;
+    background: color-mix(in srgb, var(--grund) 82%, transparent);
     color: var(--leise);
+    font-size: 11px;
   }
   .karte :global(.leaflet-control-attribution a) {
     color: inherit;
   }
+  .karte :global(.leaflet-bar) {
+    margin: 0 16px 14px 0;
+    border: 0;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: var(--schatten);
+  }
   .karte :global(.leaflet-bar a) {
+    width: 42px;
+    height: 42px;
+    border-color: var(--linie);
     background: var(--grund);
     color: var(--text);
-    border-color: var(--linie);
+    font: 400 22px/42px var(--grotesk);
+  }
+  @media (hover: hover) {
+    .karte :global(.leaflet-bar a:hover) {
+      background: var(--flaeche);
+    }
+  }
+  @media (pointer: coarse) {
+    .karte :global(.leaflet-control-zoom) {
+      display: none;
+    }
+  }
+
+  /* Was über der Karte schwebt */
+  .oben {
+    position: absolute;
+    z-index: 2;
+    top: 8px;
+    left: 0;
+    right: 0;
+  }
+  .filter {
+    display: flex;
+    gap: 8px;
+    padding: 4px 12px 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .filter::-webkit-scrollbar {
+    display: none;
+  }
+  .filter .chip,
+  .schwebend {
+    border-color: transparent;
+    background: var(--grund);
+    box-shadow: var(--schatten);
+  }
+  .filter .chip[aria-pressed='true'] {
+    background: var(--text);
+    color: var(--grund);
+  }
+  .filter :global(.pin) {
+    width: 20px;
+    height: 20px;
+    margin-left: -6px;
+    border-width: 1.5px;
+  }
+  .filter :global(.pin .icon) {
+    width: 11px;
+    height: 11px;
+    margin: 0;
+  }
+  .unten {
+    position: absolute;
+    z-index: 2;
+    left: 50%;
+    bottom: 28px;
+    display: flex;
+    gap: 8px;
+    transform: translateX(-50%);
+  }
+  .unten .pill {
+    box-shadow: var(--schatten);
+    white-space: nowrap;
+  }
+  .unten .pill.leise {
+    background: var(--grund);
+  }
+  .buehne.mit-karte .unten,
+  .buehne.waehlt .oben,
+  .buehne.waehlt .unten {
+    display: none;
+  }
+
+  /* Ortskarte: unten auf der Karte, am Handy über die ganze Breite */
+  .ortkarte {
+    position: absolute;
+    z-index: 3;
+    left: 12px;
+    right: 12px;
+    bottom: 24px;
+    max-height: calc(100% - 96px);
+    box-sizing: border-box;
+    padding: 18px 20px 20px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-radius: var(--r-gross);
+    background: var(--grund);
+    box-shadow: var(--schatten);
+    animation: hoch 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .ortkarte[hidden] {
+    display: none;
+  }
+  .ortkarte:focus {
+    outline: none;
+  }
+  @keyframes hoch {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+  }
+  .ortkarte-kopf {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: -6px -8px 0 0;
+  }
+  .ortkarte-kopf .icon-knopf {
+    width: 40px;
+    height: 40px;
+  }
+  .ortkarte-art {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--leise);
+  }
+  .ortkarte-art :global(.pin) {
+    width: 26px;
+    height: 26px;
+  }
+  .ortkarte-art :global(.pin .icon) {
+    width: 13px;
+    height: 13px;
+  }
+  .ortkarte-name {
+    margin-top: 6px;
+    font-weight: 700;
+    font-size: clamp(22px, 2.2cqi, 28px);
+    letter-spacing: -0.03em;
+    line-height: 1.12;
+    overflow-wrap: anywhere;
+  }
+  .ortkarte-kategorie {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    font-size: 15px;
+    color: var(--leise);
+  }
+  .ortkarte-kategorie :global(.icon) {
+    width: 17px;
+    height: 17px;
+  }
+  .ortkarte-notiz {
+    margin-top: 10px;
+    font-family: var(--lese);
+    font-size: 16px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+  /* Lange Texte: drei Zeilen, der Rest nach „Mehr anzeigen“ */
+  .kurz {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+  .ortkarte.ganz .kurz {
+    display: block;
+    -webkit-line-clamp: unset;
+    line-clamp: none;
+  }
+  .ortkarte-mehr {
+    margin-top: 4px;
+    padding: 6px 0;
+    border: 0;
+    background: none;
+    color: var(--text);
+    font: 600 14px var(--grotesk);
+    text-decoration: underline;
+    text-decoration-color: var(--orange);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
+    cursor: pointer;
+  }
+  .ortkarte [hidden] {
+    display: none;
+  }
+  .ortkarte-link,
+  .verwalten .pill {
+    min-height: 44px;
+    padding: 0 18px;
+    font-size: 15px;
+  }
+  .ortkarte-link {
+    margin-top: 14px;
+  }
+  /* Nur auf Johannes' Gerät: verwalten direkt an der Karte */
+  .verwalten {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--linie);
+  }
+  /* Zweiter Tipp nötig: gefüllt und mit Rückfrage, in den Farben der Seite */
+  .verwalten .loeschen.sicher {
+    background: var(--text);
+    color: var(--grund);
+  }
+  .formular [hidden] {
+    display: none;
+  }
+  .ortkarte-link :global(.extern),
+  .ortkarte-link.nach-aussen :global(.intern) {
+    display: none;
+  }
+  .ortkarte-link.nach-aussen :global(.extern) {
+    display: inline-flex;
+  }
+
+  /* Ort wählen: Pin in der Mitte, die Karte bewegt sich darunter */
+  .fadenkreuz,
+  .wahl-oben,
+  .wahl-unten {
+    display: none;
+  }
+  .buehne.waehlt .fadenkreuz {
+    display: block;
+  }
+  .buehne.waehlt .wahl-oben {
+    display: flex;
+  }
+  .buehne.waehlt .wahl-unten {
+    display: grid;
+  }
+  .buehne.waehlt .karte :global(.leaflet-marker-icon.leaflet-interactive) {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+  .fadenkreuz {
+    position: absolute;
+    z-index: 2;
+    left: 50%;
+    top: 50%;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+  }
+  .nadel {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    display: grid;
+    justify-items: center;
+    transform: translateX(-50%);
+    transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .nadel :global(.pin) {
+    width: 42px;
+    height: 42px;
+    border-width: 3px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  }
+  .nadel :global(.pin .icon) {
+    width: 20px;
+    height: 20px;
+  }
+  .nadel::after {
+    content: '';
+    width: 3px;
+    height: 14px;
+    margin-top: -2px;
+    border-radius: 0 0 2px 2px;
+    background: var(--text);
+  }
+  .nadel-schatten {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 12px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.35);
+    transform: translate(-50%, -50%);
+    transition: transform 0.2s, opacity 0.2s;
+  }
+  .buehne.bewegt .nadel {
+    transform: translate(-50%, -12px);
+  }
+  .buehne.bewegt .nadel-schatten {
+    opacity: 0.5;
+    transform: translate(-50%, -50%) scale(1.5);
+  }
+  .wahl-oben {
+    position: absolute;
+    z-index: 3;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    gap: 8px;
+  }
+  .suche {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    min-width: 0;
+    height: 48px;
+    border-radius: 999px;
+    background: var(--grund);
+    box-shadow: var(--schatten);
+  }
+  .suche:focus-within {
+    box-shadow: 0 0 0 2px var(--orange), 0 6px 22px rgba(0, 0, 0, 0.16);
+  }
+  .suche-los {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    cursor: pointer;
+  }
+  .suche-los :global(.icon) {
+    width: 20px;
+    height: 20px;
+  }
+  .suche input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding: 0 16px 0 0;
+    border: 0;
+    background: none;
+    color: var(--text);
+    font: 400 16px var(--grotesk);
+    outline: none;
+  }
+  /* Löschen-Kreuz im Suchfeld in Textfarbe statt Browser-Blau */
+  .suche input::-webkit-search-cancel-button {
+    width: 18px;
+    height: 18px;
+    margin-left: 8px;
+    background: var(--leise);
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M18 6 6 18M6 6l12 12'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M18 6 6 18M6 6l12 12'/%3E%3C/svg%3E") center / contain no-repeat;
+  }
+  .wahl-oben .icon-knopf {
+    width: 48px;
+    height: 48px;
+  }
+  .treffer {
+    position: absolute;
+    top: 56px;
+    left: 0;
+    right: 0;
+    max-height: min(320px, 50vh);
+    padding: 6px;
+    overflow-y: auto;
+    border-radius: var(--r);
+    background: var(--grund);
+    box-shadow: var(--schatten);
+  }
+  .treffer[hidden] {
+    display: none;
+  }
+  .treffer :global(button) {
+    display: grid;
+    width: 100%;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: var(--r-klein);
+    background: none;
+    text-align: left;
+    cursor: pointer;
+  }
+  .treffer :global(button:hover),
+  .treffer :global(button:focus-visible) {
+    background: var(--flaeche);
+  }
+  .treffer :global(.treffer-name) {
+    font-weight: 600;
+    font-size: 16px;
+  }
+  .treffer :global(.treffer-adresse) {
+    overflow: hidden;
+    font-size: 14px;
+    color: var(--leise);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .treffer :global(.treffer-hinweis) {
+    padding: 10px 12px;
+    font-size: 15px;
+    color: var(--leise);
+  }
+  .wahl-unten {
+    position: absolute;
+    z-index: 3;
+    left: 12px;
+    right: 12px;
+    bottom: 24px;
+    gap: 14px;
+    padding: 16px;
+    border-radius: var(--r-gross);
+    background: var(--grund);
+    box-shadow: var(--schatten);
+  }
+  .wahl-text {
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 1.35;
+    text-align: center;
+    text-wrap: balance;
+  }
+  .wahl-knoepfe {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 8px;
+  }
+
+  /* Kurze Bestätigung oben auf der Karte */
+  .toast {
+    position: absolute;
+    z-index: 4;
+    top: 72px;
+    left: 50%;
+    width: max-content;
+    max-width: calc(100% - 32px);
+    box-sizing: border-box;
+    padding: 12px 18px;
+    border-radius: 999px;
+    background: var(--text);
+    color: var(--grund);
+    font-weight: 600;
+    font-size: 15px;
+    text-align: center;
+    opacity: 0;
+    transform: translate(-50%, -8px);
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+  }
+  .toast.zeigen {
+    opacity: 1;
+    transform: translate(-50%, 0);
   }
 
   /* Liste der Orte */
+  .bm-liste {
+    grid-area: liste;
+    padding: clamp(32px, 5cqi, 56px) var(--rand) 0;
+  }
+  .bm-liste-titel {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+    font-weight: 600;
+    font-size: clamp(24px, 2.4cqi, 28px);
+    letter-spacing: -0.02em;
+  }
+  .anzahl {
+    display: inline-grid;
+    place-items: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 8px;
+    box-sizing: border-box;
+    border-radius: 999px;
+    background: var(--flaeche);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0;
+  }
   .ortsliste {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
-    gap: 10px clamp(18px, 2.4cqi, 32px);
+    grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
+    column-gap: clamp(18px, 2.4cqi, 32px);
   }
   .ortsliste :global(li[hidden]) {
     display: none;
@@ -367,104 +853,209 @@ const orte = await meineOrte();
     gap: 14px;
     align-items: flex-start;
     width: 100%;
-    padding: 12px 0;
+    padding: 14px 0;
     border: 0;
     border-bottom: 1px solid var(--linie);
     background: none;
-    color: var(--text);
-    font: inherit;
     text-align: left;
-  }
-  .ortsliste :global(button.ort) {
     cursor: pointer;
   }
-  .ortsliste :global(button.ort:hover .ort-name) {
-    text-decoration: underline;
-    text-decoration-color: var(--orange);
-    text-decoration-thickness: 2px;
-    text-underline-offset: 4px;
+  .ortsliste :global(.ort .pin) {
+    margin-top: 1px;
   }
-  .ortsliste :global(.ort-pin) {
-    display: grid;
-    flex: none;
-    place-items: center;
-    width: 40px;
-    height: 40px;
-    border: 1px solid var(--linie);
-    border-radius: 50%;
-    font-size: 20px;
-    line-height: 1;
+  .ortsliste :global(.ort-text) {
+    min-width: 0;
   }
   .ortsliste :global(.ort-name) {
     display: block;
     font-weight: 600;
-    font-size: 18px;
-    line-height: 1.25;
+    font-size: 17px;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
   }
+  /* Wie in der Projektliste: Abstand statt Trennzeichen */
   .ortsliste :global(.ort-meta) {
     display: flex;
     flex-wrap: wrap;
-    gap: 2px 12px;
+    gap: 0 12px;
     margin-top: 2px;
     font-size: 14px;
     color: var(--leise);
   }
   .ortsliste :global(.ort-notiz) {
-    display: block;
+    display: -webkit-box;
     margin-top: 4px;
+    overflow: hidden;
     font-family: var(--lese);
-    font-size: 16px;
+    font-size: 15px;
     line-height: 1.45;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+  .ortsliste :global(.ort[aria-current] .ort-name) {
+    text-decoration: underline;
+    text-decoration-color: var(--orange);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
+  }
+  @media (hover: hover) {
+    .ortsliste :global(.ort:hover .ort-name) {
+      text-decoration: underline;
+      text-decoration-color: var(--orange);
+      text-decoration-thickness: 2px;
+      text-underline-offset: 4px;
+    }
   }
   .leer {
+    display: grid;
+    gap: 14px;
+    justify-items: start;
+    padding-top: 10px;
     color: var(--leise);
   }
+  .leer[hidden] {
+    display: none;
+  }
 
-  /* Formular im Dialog: am Handy fast bildschirmfüllend */
-  .empfehlen {
-    width: min(560px, 100% - 24px);
-    max-height: calc(100% - 24px);
-    padding: clamp(20px, 3vw, 32px);
-    border: 1px solid var(--linie);
+  /* Tablet: Karte mit Rand und runden Ecken */
+  @container (min-width: 761px) {
+    .buehne {
+      margin-inline: var(--rand);
+      border-radius: var(--r-gross);
+    }
+    .ortkarte {
+      right: auto;
+      width: 380px;
+      left: 16px;
+    }
+    .wahl-oben {
+      right: auto;
+      width: min(520px, calc(100% - 24px));
+    }
+    .wahl-unten {
+      left: 50%;
+      right: auto;
+      width: 400px;
+      transform: translateX(-50%);
+    }
+  }
+
+  /* Desktop: Liste links, Karte rechts, zusammen so hoch wie das Fenster */
+  @container (min-width: 1000px) {
+    .brixmap {
+      --geteilt: 1;
+      grid-template-columns: minmax(320px, 380px) minmax(0, 1fr);
+      grid-template-rows: auto minmax(0, 1fr);
+      grid-template-areas: 'kopf buehne' 'liste buehne';
+      column-gap: clamp(28px, 3cqi, 44px);
+      max-width: 1280px;
+      height: clamp(560px, calc(100svh - 108px), 940px);
+      height: round(down, clamp(560px, calc(100svh - 108px), 940px), 1px);
+      margin-inline: auto;
+      padding-inline: var(--rand);
+    }
+    .bm-kopf {
+      padding: 4px 0 24px;
+    }
+    .buehne {
+      height: auto;
+      margin: 0;
+    }
+    .bm-liste {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      padding: 0;
+    }
+    .ortsliste {
+      display: block;
+      flex: 1;
+      min-height: 0;
+      margin-right: -12px;
+      padding-right: 12px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+    }
+    .zur-liste {
+      display: none;
+    }
+    .unten {
+      top: 12px;
+      right: 12px;
+      bottom: auto;
+      left: auto;
+      transform: none;
+    }
+    .buehne.mit-karte .unten {
+      display: flex;
+    }
+  }
+
+  /* Formular als Sheet: am Handy von unten, sonst in der Mitte */
+  .sheet {
+    width: min(560px, 100% - 32px);
+    max-width: none;
+    max-height: min(90svh, 920px);
+    box-sizing: border-box;
+    padding: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border: 0;
     border-radius: var(--r-gross);
     background: var(--grund);
     color: var(--text);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent), 0 24px 64px rgba(0, 0, 0, 0.28);
   }
-  .empfehlen::backdrop {
-    background: rgba(0, 0, 0, 0.45);
+  .sheet::backdrop {
+    background: rgba(20, 20, 19, 0.5);
   }
-  .empfehlen-kopf {
+  .sheet[open] {
+    animation: sheet-ein 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  @keyframes sheet-ein {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+  }
+  .sheet-kopf {
+    position: sticky;
+    top: 0;
+    z-index: 1;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin-bottom: 8px;
+    padding: 16px 16px 8px 24px;
+    background: var(--grund);
   }
-  .empfehlen-titel {
-    font-weight: 600;
+  .sheet-titel {
+    font-weight: 700;
     font-size: 26px;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
   }
   .formular {
     display: grid;
-    gap: 18px;
-  }
-  .gewaehlt {
-    font-size: 14px;
-    color: var(--leise);
+    gap: 20px;
+    padding: 8px 24px 24px;
   }
   .feld {
     display: grid;
-    gap: 6px;
+    gap: 8px;
+    min-width: 0;
     margin: 0;
     padding: 0;
     border: 0;
+  }
+  .feld-name {
+    padding: 0;
     font-weight: 600;
     font-size: 15px;
   }
   .feld legend {
-    margin-bottom: 6px;
-    padding: 0;
+    margin-bottom: 8px;
   }
   .feld .leise {
     font-weight: 400;
@@ -475,17 +1066,22 @@ const orte = await meineOrte();
     width: 100%;
     box-sizing: border-box;
     padding: 12px 14px;
-    border: 1px solid color-mix(in srgb, var(--text) 28%, var(--grund));
+    border: 1px solid color-mix(in srgb, var(--text) 26%, var(--grund));
     border-radius: var(--r-klein);
     background: var(--grund);
     color: var(--text);
     font: 400 16px/1.4 var(--grotesk);
   }
+  .feld input:focus,
+  .feld textarea:focus {
+    border-color: var(--text);
+    outline: none;
+  }
   .feld textarea {
     resize: vertical;
   }
   .wahl {
-    font-weight: 500;
+    position: relative;
   }
   .wahl input {
     position: absolute;
@@ -510,7 +1106,7 @@ const orte = await meineOrte();
   }
   .einwilligung {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     align-items: flex-start;
     font-size: 14px;
     line-height: 1.45;
@@ -527,27 +1123,49 @@ const orte = await meineOrte();
     color: var(--text);
   }
   .fehler {
-    padding: 10px 14px;
+    padding: 12px 14px;
     border-radius: var(--r-klein);
     background: var(--flaeche);
     font-size: 15px;
   }
-  .fehler[hidden],
-  .danke[hidden] {
+  .fehler[hidden] {
     display: none;
   }
-  .danke {
-    display: grid;
-    gap: 14px;
-    justify-items: start;
-    font-family: var(--lese);
-    font-size: 18px;
+  .senden {
+    width: 100%;
   }
-  .danke-titel {
-    font-family: var(--grotesk);
-    font-weight: 700;
-    font-size: 32px;
-    letter-spacing: -0.03em;
+  @media (max-width: 760px) {
+    .sheet {
+      width: 100%;
+      max-height: 92svh;
+      margin: auto 0 0;
+      border-radius: 22px 22px 0 0;
+    }
+    .sheet[open] {
+      animation-name: sheet-hoch;
+    }
+    @keyframes sheet-hoch {
+      from {
+        transform: translateY(100%);
+      }
+    }
+    .formular {
+      padding: 8px 20px max(24px, env(safe-area-inset-bottom));
+    }
+    .sheet-kopf {
+      padding-left: 20px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ortkarte,
+    .sheet[open] {
+      animation: none;
+    }
+    .nadel,
+    .nadel-schatten,
+    .toast {
+      transition: none;
+    }
   }
 </style>
 
@@ -557,63 +1175,56 @@ const orte = await meineOrte();
 
   type Zustand = {
     karte: L.Map;
+    buehne: HTMLElement;
+    ortkarte: HTMLElement;
     ebenen: Record<Art, L.LayerGroup>;
     marker: Map<string, L.Marker>;
     orte: Ort[];
     filter: Art | 'alle';
     api: string;
-    wahl: L.Marker | null;
+    gewaehlt: string | null;
+    hervor: string | null;
+    zurueck: HTMLElement | null;
+    vorschlag: string;
     geoeffnet: number;
+    beruehrt: boolean;
+    /** Geräte-Schlüssel, nur auf Johannes' freigeschaltetem Gerät (sonst leer) */
+    ich: string;
   };
 
   const KACHELN = 'https://tile.openstreetmap.de/{z}/{x}/{y}.png';
   const NAMENSNENNUNG = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap-Mitwirkende</a>';
   const START: L.LatLngTuple = [51.16, 10.45]; // Mitte Deutschlands, wenn es noch keine Orte gibt
-  const DATUM = new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'short', year: 'numeric' });
+  const WAHL_TEXT = 'Schieb die Karte, bis der Pin auf dem Ort sitzt.';
+  // Reihenfolge in der Liste und Stapelung auf der Karte: Johannes' Orte oben
+  const RANG: Record<Art, number> = { ich: 0, empfehlung: 1 };
+  const EBENE: Record<Art, number> = { ich: 400, empfehlung: 0 };
+  const GERAET = 'jb-ich'; // localStorage: Geräte-Schlüssel von Johannes
 
   let aktiv: Zustand | null = null;
+  let toastZeit = 0;
   const bewegungArm = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const geteilt = (z: Zustand) => getComputedStyle(z.buehne).getPropertyValue('--geteilt').trim() === '1';
 
-  function pin(art: Art) {
-    return L.divIcon({
-      className: `pin pin-${art}`,
-      html: ARTEN[art].emoji,
-      iconSize: [40, 40],
-      iconAnchor: [20, 20],
-      popupAnchor: [0, -20],
-    });
+  // Pins und Icons kommen aus <template>-Vorlagen im HTML
+  const vorlage = (name: string) => document.querySelector<HTMLTemplateElement>(`template[data-vorlage="${name}"]`);
+  const vorlageHtml = (name: string) => vorlage(name)?.innerHTML.trim() ?? '';
+  const vorlageKnoten = (name: string) =>
+    (vorlage(name)?.content.firstElementChild?.cloneNode(true) as Element | undefined) ?? document.createElement('span');
+
+  function span(klasse: string, text: string) {
+    const s = document.createElement('span');
+    s.className = klasse;
+    s.textContent = text;
+    return s;
   }
 
-  function absatz(klasse: string, text: string) {
-    const p = document.createElement('p');
-    p.className = klasse;
-    p.textContent = text;
-    return p;
+  function artText(ort: Ort) {
+    if (ort.art === 'ich') return 'Von mir';
+    return ort.von ? `Empfohlen von ${ort.von}` : 'Empfohlen';
   }
 
-  // Inhalt des Popups, ausschließlich über textContent (Empfehlungen sind Text von Besuchern)
-  function popup(ort: Ort) {
-    const box = document.createElement('div');
-    box.className = 'pin-info';
-    box.append(absatz('pin-art', `${ARTEN[ort.art].emoji} ${ort.art === 'ich' ? 'Von mir' : ort.art === 'besucht' ? 'Empfehlung, besucht' : 'Empfehlung'}`));
-    box.append(absatz('pin-name', ort.name));
-    if (ort.kategorie) box.append(absatz('pin-klein', KATEGORIEN[ort.kategorie]));
-    if (ort.notiz) box.append(absatz('pin-notiz', ort.notiz));
-    if (ort.von) box.append(absatz('pin-klein', `Empfohlen von ${ort.von}`));
-    if (ort.art === 'besucht' && ort.kommentar) {
-      const k = absatz('pin-kommentar', ort.kommentar);
-      box.append(k);
-    }
-    if (ort.art === 'besucht' && ort.besuchtAm) box.append(absatz('pin-klein', `Besucht am ${DATUM.format(new Date(ort.besuchtAm))}`));
-    if (ort.link) {
-      const a = document.createElement('a');
-      a.href = ort.link;
-      a.textContent = ort.linkText || 'Mehr dazu';
-      box.append(a);
-    }
-    return box;
-  }
-
+  // Listeneintrag wie im HTML, ausschließlich über textContent (Empfehlungen sind Text von Besuchern)
   function listenEintrag(ort: Ort) {
     const li = document.createElement('li');
     li.dataset.art = ort.art;
@@ -621,57 +1232,56 @@ const orte = await meineOrte();
     knopf.type = 'button';
     knopf.className = 'ort';
     knopf.dataset.zeige = ort.id;
-    const zeichen = document.createElement('span');
-    zeichen.className = 'ort-pin';
-    zeichen.setAttribute('aria-hidden', 'true');
-    zeichen.textContent = ARTEN[ort.art].emoji;
-    const text = document.createElement('span');
-    const name = document.createElement('span');
-    name.className = 'ort-name';
-    name.textContent = ort.name;
-    const meta = document.createElement('span');
-    meta.className = 'ort-meta';
-    const teile = [ort.art === 'ich' ? 'Von mir' : ort.art === 'besucht' ? 'Besucht' : 'Empfehlung'];
-    if (ort.kategorie) teile.push(KATEGORIEN[ort.kategorie]);
-    if (ort.von) teile.push(`von ${ort.von}`);
-    teile.forEach((t) => {
-      const s = document.createElement('span');
-      s.textContent = t;
-      meta.append(s);
-    });
-    text.append(name, meta);
-    const notiz = ort.art === 'besucht' && ort.kommentar ? ort.kommentar : ort.notiz;
-    if (notiz) {
-      const n = document.createElement('span');
-      n.className = 'ort-notiz';
-      n.textContent = notiz;
-      text.append(n);
-    }
-    knopf.append(zeichen, text);
+    const meta = span('ort-meta', '');
+    meta.append(span('', ARTEN[ort.art].name));
+    if (ort.kategorie) meta.append(span('', KATEGORIEN[ort.kategorie]));
+    if (ort.von) meta.append(span('', `von ${ort.von}`));
+    const text = span('ort-text', '');
+    text.append(span('ort-name', ort.name), meta);
+    if (ort.notiz) text.append(span('ort-notiz', ort.notiz));
+    knopf.append(vorlageKnoten(`pin-${ort.art}`), text);
+    if (ort.id === aktiv?.gewaehlt) knopf.setAttribute('aria-current', 'true');
     li.append(knopf);
     return li;
   }
 
-  function hinzufuegen(z: Zustand, orte: Ort[]) {
+  function listeZeichnen(z: Zustand) {
+    const sortiert = [...z.orte].sort((a, b) => RANG[a.art] - RANG[b.art]);
+    document.querySelector('[data-ortsliste]')?.replaceChildren(...sortiert.map(listenEintrag));
+  }
+
+  const markerIcon = (art: Art) =>
+    L.divIcon({ className: 'marker', html: vorlageHtml(`pin-${art}`), iconSize: [44, 44], iconAnchor: [22, 22] });
+
+  function hinzufuegen(z: Zustand, orte: Ort[], vorne = false) {
     for (const ort of orte) {
-      const marker = L.marker([ort.lat, ort.lng], { icon: pin(ort.art), title: ort.name, riseOnHover: true });
-      // Name für Screenreader, sicher per setAttribute (Empfehlungen sind Text von Besuchern)
-      marker.on('add', () => marker.getElement()?.setAttribute('aria-label', `${ARTEN[ort.art].name}: ${ort.name}`));
-      marker.bindPopup(() => popup(ort), { maxWidth: 300 });
+      if (!Number.isFinite(ort.lat) || !Number.isFinite(ort.lng) || z.marker.has(ort.id)) continue;
+      const id = ort.id;
+      const marker = L.marker([ort.lat, ort.lng], { icon: markerIcon(ort.art), zIndexOffset: EBENE[ort.art], riseOnHover: true });
+      marker.on('add', () => {
+        const element = marker.getElement();
+        const aktuell = z.orte.find((o) => o.id === id);
+        if (!element || !aktuell) return;
+        // Name für Screenreader, sicher per setAttribute (Empfehlungen sind Text von Besuchern)
+        element.setAttribute('aria-label', `${artText(aktuell)}: ${aktuell.name}`);
+        element.setAttribute('role', 'button');
+        element.classList.toggle('aktiv', z.gewaehlt === id);
+      });
+      marker.on('click', () => auswaehlen(z, id));
+      // Erst merken, dann auf die Karte: Ist die Ebene schon sichtbar, feuert 'add' sofort und braucht den Ort
+      if (vorne) z.orte.unshift(ort);
+      else z.orte.push(ort);
+      z.marker.set(id, marker);
       marker.addTo(z.ebenen[ort.art]);
-      z.marker.set(ort.id, marker);
-      z.orte.push(ort);
     }
-    const liste = document.querySelector('[data-ortsliste]');
-    liste?.replaceChildren(...z.orte.map(listenEintrag));
+    listeZeichnen(z);
     filtern(z, z.filter);
   }
 
   function filtern(z: Zustand, filter: Art | 'alle') {
     z.filter = filter;
     (Object.keys(z.ebenen) as Art[]).forEach((art) => {
-      const zeigen = filter === 'alle' || filter === art;
-      if (zeigen) z.ebenen[art].addTo(z.karte);
+      if (filter === 'alle' || filter === art) z.ebenen[art].addTo(z.karte);
       else z.ebenen[art].remove();
     });
     document.querySelectorAll<HTMLElement>('[data-filter]').forEach((k) => k.setAttribute('aria-pressed', String(k.dataset.filter === filter)));
@@ -680,25 +1290,252 @@ const orte = await meineOrte();
       li.hidden = filter !== 'alle' && li.dataset.art !== filter;
       if (!li.hidden) sichtbar++;
     });
+    const anzahl = document.querySelector('[data-anzahl]');
+    if (anzahl) anzahl.textContent = String(sichtbar);
     const leer = document.querySelector<HTMLElement>('[data-leer]');
     if (leer) leer.hidden = sichtbar > 0;
+    const gewaehlt = z.orte.find((o) => o.id === z.gewaehlt);
+    if (gewaehlt && filter !== 'alle' && filter !== gewaehlt.art) schliessen(z, false);
   }
 
-  function zeigen(z: Zustand, id: string) {
-    const marker = z.marker.get(id);
-    if (!marker) return;
+  // Ortskarte füllen, ausschließlich über textContent
+  function kartenInhalt(z: Zustand, ort: Ort) {
+    const feld = <T extends HTMLElement = HTMLElement>(name: string) => z.ortkarte.querySelector<T>(`[data-k="${name}"]`)!;
+    feld('pin').replaceChildren(vorlageKnoten(`pin-${ort.art}`));
+    feld('art').textContent = artText(ort);
+    feld('name').textContent = ort.name;
+    const kategorie = feld('kategorie');
+    kategorie.hidden = !ort.kategorie;
+    if (ort.kategorie) kategorie.replaceChildren(vorlageKnoten(`kategorie-${ort.kategorie}`), KATEGORIEN[ort.kategorie]);
+    const notiz = feld('notiz');
+    notiz.hidden = !ort.notiz;
+    notiz.textContent = ort.notiz ?? '';
+    feld<HTMLAnchorElement>('route').href = `https://www.google.com/maps/dir/?api=1&destination=${ort.lat},${ort.lng}`;
+    const link = feld<HTMLAnchorElement>('link');
+    link.hidden = !ort.link;
+    if (ort.link) {
+      link.href = ort.link;
+      link.classList.toggle('nach-aussen', !ort.link.startsWith('/'));
+      feld('linktext').textContent = ort.linkText || 'Mehr dazu';
+    }
+    // Verwalten nur auf Johannes' Gerät und nur für Orte vom Server (nicht für Orte aus Beiträgen)
+    const verwalten = z.ortkarte.querySelector<HTMLElement>('[data-k="verwalten"]');
+    if (verwalten) {
+      verwalten.hidden = !z.ich || !ort.id.startsWith('e-');
+      feld('loeschen').classList.remove('sicher');
+      feld('loeschen-text').textContent = 'Löschen';
+    }
+    // Lange Texte kürzen; „Mehr anzeigen“ nur, wenn wirklich etwas abgeschnitten ist
+    z.ortkarte.classList.remove('ganz');
+    feld('mehr').hidden = true;
+  }
+
+  function mehrPruefen(z: Zustand) {
+    const gekuerzt = [...z.ortkarte.querySelectorAll<HTMLElement>('.kurz')].some((e) => !e.hidden && e.scrollHeight > e.clientHeight + 1);
+    z.ortkarte.querySelector<HTMLElement>('[data-k="mehr"]')!.hidden = !gekuerzt;
+  }
+
+  // Pin so verschieben, dass er nicht unter der Ortskarte oder den Knöpfen liegt.
+  // immer = true (aus der Liste, über ?ort=): in die Mitte der freien Fläche und näher heran.
+  function insBild(z: Zustand, ort: L.LatLng, immer: boolean) {
+    const { karte, buehne, ortkarte } = z;
+    const groesse = karte.getSize();
+    const oben = 72;
+    let unten = groesse.y - 96;
+    const p = karte.latLngToContainerPoint(ort);
+    let verdeckt = false;
+    if (!ortkarte.hidden) {
+      const b = buehne.getBoundingClientRect();
+      const r = ortkarte.getBoundingClientRect();
+      unten = r.top - b.top - 16;
+      verdeckt = p.x > r.left - b.left - 24 && p.x < r.right - b.left + 24 && p.y > r.top - b.top - 24;
+    }
+    const zoom = immer ? Math.max(karte.getZoom(), 15) : karte.getZoom();
+    if (!immer && !verdeckt && p.x > 24 && p.x < groesse.x - 24 && p.y > oben && p.y < groesse.y - 24) return;
+    const mitte = (oben + Math.max(unten, oben + 40)) / 2;
+    const punkt = karte.project(ort, zoom).add([0, groesse.y / 2 - mitte]);
+    karte.setView(karte.unproject(punkt, zoom), zoom, { animate: !bewegungArm() });
+  }
+
+  function markieren(z: Zustand, id: string | null, an: boolean) {
     const ort = z.orte.find((o) => o.id === id);
-    if (ort && z.filter !== 'alle' && z.filter !== ort.art) filtern(z, 'alle');
-    z.karte.getContainer().scrollIntoView({ behavior: bewegungArm() ? 'auto' : 'smooth', block: 'center' });
-    // Ohne Animation springen, damit das Popup danach richtig ins Bild rückt (autoPan)
-    z.karte.setView(marker.getLatLng(), Math.max(z.karte.getZoom(), 15), { animate: false });
-    marker.openPopup();
+    const marker = id ? z.marker.get(id) : undefined;
+    if (!ort || !marker) return;
+    marker.getElement()?.classList.toggle('aktiv', an);
+    marker.setZIndexOffset(an ? 1000 : EBENE[ort.art]);
+    const knopf = document.querySelector(`[data-zeige="${CSS.escape(ort.id)}"]`);
+    if (an) knopf?.setAttribute('aria-current', 'true');
+    else knopf?.removeAttribute('aria-current');
+  }
+
+  function adresse(id: string | null) {
+    const url = new URL(location.href);
+    if (id) url.searchParams.set('ort', id);
+    else url.searchParams.delete('ort');
+    url.searchParams.delete('empfehlen');
+    history.replaceState(history.state, '', url);
+  }
+
+  function auswaehlen(z: Zustand, id: string, immer = false) {
+    const ort = z.orte.find((o) => o.id === id);
+    const marker = z.marker.get(id);
+    if (!ort || !marker) return;
+    if (z.filter !== 'alle' && z.filter !== ort.art) filtern(z, 'alle');
+    if (z.gewaehlt !== id) markieren(z, z.gewaehlt, false);
+    if (z.ortkarte.hidden) z.zurueck = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    z.gewaehlt = id;
+    markieren(z, id, true);
+    kartenInhalt(z, ort);
+    z.ortkarte.hidden = false;
+    z.buehne.classList.add('mit-karte');
+    mehrPruefen(z);
+    insBild(z, marker.getLatLng(), immer);
+    z.ortkarte.focus({ preventScroll: true });
+    if (geteilt(z)) document.querySelector(`[data-zeige="${CSS.escape(id)}"]`)?.scrollIntoView({ block: 'nearest' });
+    adresse(id);
+  }
+
+  function schliessen(z: Zustand, fokus = true) {
+    if (!z.gewaehlt) return;
+    markieren(z, z.gewaehlt, false);
+    z.gewaehlt = null;
+    z.ortkarte.hidden = true;
+    z.buehne.classList.remove('mit-karte');
+    if (fokus && z.zurueck?.isConnected) z.zurueck.focus({ preventScroll: true });
+    z.zurueck = null;
+    adresse(null);
+  }
+
+  function hervorheben(z: Zustand, id: string | null) {
+    if (z.hervor === id) return;
+    if (z.hervor) z.marker.get(z.hervor)?.getElement()?.classList.remove('hervor');
+    z.hervor = id;
+    if (id) z.marker.get(id)?.getElement()?.classList.add('hervor');
   }
 
   function einpassen(z: Zustand) {
-    if (z.orte.length === 0) return z.karte.setView(START, 6);
-    const grenzen = L.latLngBounds(z.orte.map((o) => [o.lat, o.lng] as L.LatLngTuple));
-    z.karte.fitBounds(grenzen, { padding: [48, 48], maxZoom: 13 });
+    const sichtbar = z.orte.filter((o) => z.filter === 'alle' || z.filter === o.art);
+    if (sichtbar.length === 0) return z.karte.setView(START, 6);
+    const grenzen = L.latLngBounds(sichtbar.map((o) => [o.lat, o.lng] as L.LatLngTuple));
+    z.karte.fitBounds(grenzen, { paddingTopLeft: [32, 80], paddingBottomRight: [32, 96], maxZoom: 14 });
+  }
+
+  // Die Texte über der Karte haben krumme Höhen, dann beginnt die Karte z. B. bei 259,06 px. Kacheln an
+  // solchen Kanten werden geglättet und zeigen Haarlinien. Deshalb die Karte um den Rest bis zum
+  // nächsten ganzen Gerätepixel verschieben (höchstens einen Pixel, nicht zu sehen).
+  function aufGeraetepixel(element: HTMLElement) {
+    element.style.top = element.style.left = '';
+    const r = element.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const rest = (wert: number) => (Math.ceil(wert * dpr - 0.001) - wert * dpr) / dpr;
+    element.style.top = `${rest(r.top + window.scrollY)}px`;
+    element.style.left = `${rest(r.left + window.scrollX)}px`;
+  }
+
+  function sichtbarMachen(element: HTMLElement) {
+    const r = element.getBoundingClientRect();
+    if (r.top >= 0 && r.bottom <= window.innerHeight) return;
+    element.scrollIntoView({ behavior: bewegungArm() ? 'auto' : 'smooth', block: r.height > window.innerHeight ? 'start' : 'center' });
+  }
+
+  function toast(text: string) {
+    const element = document.querySelector<HTMLElement>('[data-toast]');
+    if (!element) return;
+    element.textContent = text;
+    element.classList.add('zeigen');
+    window.clearTimeout(toastZeit);
+    toastZeit = window.setTimeout(() => element.classList.remove('zeigen'), 4500);
+  }
+
+  // Ort vom Server in einen Ort für Karte und Liste übersetzen
+  function ausServer(o: Record<string, unknown>): Ort {
+    const kategorie = String(o.kategorie) as Kategorie;
+    return {
+      id: `e-${o.id}`,
+      art: o.status === 'ich' ? 'ich' : 'empfehlung',
+      name: String(o.name ?? ''),
+      kategorie: kategorie in KATEGORIEN ? kategorie : undefined,
+      notiz: o.notiz ? String(o.notiz) : undefined,
+      lat: Number(o.lat),
+      lng: Number(o.lng),
+      von: o.von ? String(o.von) : undefined,
+    };
+  }
+
+  // ---------- Verwalten auf Johannes' Gerät ----------
+
+  function ortEntfernen(z: Zustand, id: string) {
+    const ort = z.orte.find((o) => o.id === id);
+    const marker = z.marker.get(id);
+    if (z.gewaehlt === id) schliessen(z, false);
+    if (ort && marker) z.ebenen[ort.art].removeLayer(marker);
+    z.marker.delete(id);
+    z.orte = z.orte.filter((o) => o.id !== id);
+    listeZeichnen(z);
+    filtern(z, z.filter);
+  }
+
+  async function loeschen(z: Zustand, id: string) {
+    try {
+      const antwort = await fetch(`${z.api}/orte/aendern`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ ich: z.ich, id: Number(id.slice(2)), aktion: 'loeschen' }),
+      });
+      const ergebnis = (await antwort.json().catch(() => ({}))) as { fehler?: string };
+      if (antwort.status === 401) {
+        geraetVergessen(z);
+        return toast('Die Freischaltung gilt nicht mehr. Bitte im Admin neu freischalten.');
+      }
+      if (!antwort.ok) return toast(ergebnis.fehler || 'Das hat nicht geklappt.');
+      ortEntfernen(z, id);
+      toast('Gelöscht.');
+    } catch {
+      toast('Keine Verbindung. Bitte später nochmal.');
+    }
+  }
+
+  // Knopf, Pin in der Kartenmitte und Formular zeigen, ob von hier eigene Orte gesetzt werden
+  function geraetAnzeigen(z: Zustand) {
+    const ich = Boolean(z.ich);
+    document.querySelector('[data-nadel]')?.replaceChildren(vorlageKnoten(ich ? 'pin-ich' : 'pin-empfehlung'));
+    document.querySelectorAll<HTMLElement>('[data-nur-besucher]').forEach((e) => {
+      e.hidden = ich;
+      e.querySelectorAll<HTMLInputElement>('input').forEach((feld) => (feld.disabled = ich));
+    });
+    const notiz = document.querySelector<HTMLTextAreaElement>('[data-formular] [name="notiz"]');
+    if (notiz) notiz.required = !ich;
+    const notizName = document.querySelector('[data-notiz-name]');
+    if (notizName) notizName.textContent = ich ? 'Notiz (optional)' : 'Warum empfiehlst du ihn?';
+    const titel = document.querySelector('[data-sheet-titel]');
+    if (titel) titel.textContent = ich ? 'Eigenen Ort setzen' : 'Ort empfehlen';
+    document.querySelectorAll('[data-empfehlen-text]').forEach((e) => (e.textContent = ich ? 'Ort setzen' : 'Empfehlen'));
+  }
+
+  function geraetVergessen(z: Zustand) {
+    z.ich = '';
+    try {
+      localStorage.removeItem(GERAET);
+    } catch {}
+    geraetAnzeigen(z);
+    if (z.gewaehlt) auswaehlen(z, z.gewaehlt);
+  }
+
+  // Freischaltung aus dem Admin kommt als #ich=… in der Adresse: speichern und sofort aus der Adresse nehmen
+  function geraetLesen(): { schluessel: string; neu: boolean } {
+    const treffer = location.hash.match(/^#ich=([\w.]+)$/);
+    if (treffer) {
+      try {
+        localStorage.setItem(GERAET, treffer[1]);
+      } catch {}
+      history.replaceState(history.state, '', location.pathname + location.search);
+      return { schluessel: treffer[1], neu: true };
+    }
+    try {
+      return { schluessel: localStorage.getItem(GERAET) || '', neu: false };
+    } catch {
+      return { schluessel: '', neu: false };
+    }
   }
 
   async function empfehlungenLaden(z: Zustand) {
@@ -706,74 +1543,72 @@ const orte = await meineOrte();
       const antwort = await fetch(`${z.api}/orte`);
       if (!antwort.ok) return;
       const { orte } = (await antwort.json()) as { orte: Record<string, unknown>[] };
-      hinzufuegen(
-        z,
-        orte.map((o) => ({
-          id: `e-${o.id}`,
-          art: o.status === 'besucht' ? 'besucht' : 'empfehlung',
-          name: String(o.name),
-          kategorie: (o.kategorie as Kategorie) in KATEGORIEN ? (o.kategorie as Kategorie) : undefined,
-          notiz: o.notiz ? String(o.notiz) : undefined,
-          lat: Number(o.lat),
-          lng: Number(o.lng),
-          von: o.von ? String(o.von) : undefined,
-          kommentar: o.kommentar ? String(o.kommentar) : undefined,
-          besuchtAm: o.besucht_am ? String(o.besucht_am) : undefined,
-        })),
-      );
+      hinzufuegen(z, orte.map(ausServer));
     } catch {}
   }
 
-  // Ort wählen: Tippen auf die Karte, Suche oder eigener Standort
-  function wahlSetzen(z: Zustand, ort: L.LatLng, name?: string) {
-    if (z.wahl) z.wahl.setLatLng(ort);
-    else {
-      z.wahl = L.marker(ort, {
-        icon: L.divIcon({ className: 'pin pin-wahl', html: '📍', iconSize: [40, 40], iconAnchor: [20, 36] }),
-        draggable: true,
-        title: 'Gewählter Ort',
-        alt: 'Gewählter Ort',
-        zIndexOffset: 1000,
-      }).addTo(z.karte);
-    }
-    if (name) {
-      const feld = document.querySelector<HTMLInputElement>('[data-formular] [name="name"]');
-      if (feld && !feld.value) feld.value = name;
-    }
-    const text = document.querySelector('[data-platzieren-text]');
-    if (text) text.textContent = 'Passt der Punkt? Du kannst ihn noch verschieben. Dann auf „Weiter“.';
-    document.querySelector<HTMLButtonElement>('[data-weiter]')!.disabled = false;
+  // ---------- Ort wählen ----------
+
+  const wahlText = (text: string) => {
+    const element = document.querySelector('[data-wahl-text]');
+    if (element) element.textContent = text;
+  };
+
+  function waehlenStarten(z: Zustand) {
+    schliessen(z, false);
+    z.vorschlag = '';
+    wahlText(WAHL_TEXT);
+    z.buehne.classList.add('waehlt');
+    sichtbarMachen(z.buehne);
+    // Am Handy nicht gleich die Tastatur öffnen
+    const fein = window.matchMedia('(pointer: fine)').matches;
+    document.querySelector<HTMLElement>(fein ? '#ortssuche' : '[data-hier]')?.focus({ preventScroll: true });
   }
 
-  function platzierenStarten(z: Zustand) {
-    document.querySelector<HTMLElement>('[data-leiste]')!.hidden = true;
-    document.querySelector<HTMLElement>('[data-platzieren]')!.hidden = false;
-    z.karte.getContainer().classList.add('waehlt');
-    document.querySelector('[data-platzieren]')?.scrollIntoView({ behavior: bewegungArm() ? 'auto' : 'smooth', block: 'start' });
+  function waehlenBeenden(z: Zustand) {
+    z.buehne.classList.remove('waehlt', 'bewegt');
+    const treffer = document.querySelector<HTMLElement>('[data-treffer]');
+    treffer?.replaceChildren();
+    if (treffer) treffer.hidden = true;
+    const suche = document.querySelector<HTMLInputElement>('#ortssuche');
+    if (suche) suche.value = '';
+    document.querySelector<HTMLElement>('.unten [data-empfehlen]')?.focus({ preventScroll: true });
   }
 
-  function platzierenBeenden(z: Zustand) {
-    document.querySelector<HTMLElement>('[data-leiste]')!.hidden = false;
-    document.querySelector<HTMLElement>('[data-platzieren]')!.hidden = true;
-    z.karte.getContainer().classList.remove('waehlt');
-    z.wahl?.remove();
-    z.wahl = null;
-    document.querySelector<HTMLButtonElement>('[data-weiter]')!.disabled = true;
-    document.querySelector('[data-treffer]')?.replaceChildren();
-    const text = document.querySelector('[data-platzieren-text]');
-    if (text) text.textContent = 'Tippe auf die Karte, wo der Ort liegt, oder suche ihn.';
+  function hierIstEs(z: Zustand) {
+    // Zu weit weg, um einen Ort genau zu treffen: erst heranzoomen
+    if (z.karte.getZoom() < 15) {
+      z.karte.setView(z.karte.getCenter(), 17, { animate: !bewegungArm() });
+      wahlText('Näher dran. Sitzt der Pin genau?');
+      return;
+    }
+    const dialog = document.querySelector<HTMLDialogElement>('[data-dialog]');
+    if (!dialog) return;
+    const name = document.querySelector<HTMLInputElement>('[data-formular] [name="name"]');
+    if (name && !name.value && z.vorschlag) name.value = z.vorschlag;
+    document.querySelector<HTMLElement>('[data-fehler]')!.hidden = true;
+    z.geoeffnet = performance.now();
+    dialog.showModal();
+    if (window.matchMedia('(pointer: fine)').matches) name?.focus();
+  }
+
+  function trefferHinweis(text: string) {
+    const li = document.createElement('li');
+    li.append(span('treffer-hinweis', text));
+    return li;
   }
 
   async function suchen(z: Zustand, begriff: string) {
-    const ziel = document.querySelector('[data-treffer]');
+    const ziel = document.querySelector<HTMLElement>('[data-treffer]');
     if (!ziel || begriff.trim().length < 2) return;
-    ziel.replaceChildren(absatz('platzieren-text', 'Suche …'));
+    ziel.hidden = false;
+    ziel.replaceChildren(trefferHinweis('Suche …'));
     try {
       const antwort = await fetch(`${z.api}/suche?q=${encodeURIComponent(begriff.trim())}`);
       const daten = (await antwort.json()) as { treffer?: { name: string; adresse: string; lat: number; lng: number }[]; fehler?: string };
       const treffer = daten.treffer ?? [];
-      if (!treffer.length) {
-        ziel.replaceChildren(absatz('platzieren-text', daten.fehler ?? 'Nichts gefunden. Tippe den Ort einfach auf der Karte an.'));
+      if (treffer.length === 0) {
+        ziel.replaceChildren(trefferHinweis(daten.fehler ?? 'Nichts gefunden. Schieb die Karte einfach selbst hin.'));
         return;
       }
       ziel.replaceChildren(
@@ -781,43 +1616,30 @@ const orte = await meineOrte();
           const li = document.createElement('li');
           const knopf = document.createElement('button');
           knopf.type = 'button';
-          const name = document.createElement('strong');
-          name.textContent = t.name;
-          knopf.append(name, document.createElement('br'), t.adresse);
+          knopf.append(span('treffer-name', t.name), span('treffer-adresse', t.adresse));
           knopf.addEventListener('click', () => {
-            const ort = L.latLng(t.lat, t.lng);
-            z.karte.setView(ort, 16, { animate: !bewegungArm() });
-            wahlSetzen(z, ort, t.name);
+            z.karte.setView([t.lat, t.lng], 17, { animate: !bewegungArm() });
+            z.vorschlag = t.name;
+            ziel.hidden = true;
             ziel.replaceChildren();
+            document.querySelector<HTMLElement>('[data-hier]')?.focus({ preventScroll: true });
+            wahlText(WAHL_TEXT);
           });
           li.append(knopf);
           return li;
         }),
       );
     } catch {
-      ziel.replaceChildren(absatz('platzieren-text', 'Die Suche klappt gerade nicht. Tippe den Ort einfach auf der Karte an.'));
+      ziel.replaceChildren(trefferHinweis('Die Suche klappt gerade nicht. Schieb die Karte einfach selbst hin.'));
     }
-  }
-
-  function dialogOeffnen(z: Zustand) {
-    const dialog = document.querySelector<HTMLDialogElement>('[data-dialog]');
-    if (!dialog || !z.wahl) return;
-    const { lat, lng } = z.wahl.getLatLng();
-    document.querySelector('[data-gewaehlt]')!.textContent = `📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-    document.querySelector<HTMLElement>('[data-formular]')!.hidden = false;
-    document.querySelector<HTMLElement>('[data-danke]')!.hidden = true;
-    document.querySelector<HTMLElement>('[data-fehler]')!.hidden = true;
-    z.geoeffnet = performance.now();
-    dialog.showModal();
-    document.querySelector<HTMLInputElement>('[data-formular] [name="name"]')?.focus();
   }
 
   async function senden(z: Zustand, formular: HTMLFormElement) {
     const fehler = document.querySelector<HTMLElement>('[data-fehler]')!;
     const knopf = document.querySelector<HTMLButtonElement>('[data-senden]')!;
-    if (!formular.reportValidity() || !z.wahl) return;
+    if (!formular.reportValidity()) return;
     const daten = new FormData(formular);
-    const { lat, lng } = z.wahl.getLatLng();
+    const { lat, lng } = z.karte.getCenter();
     knopf.disabled = true;
     fehler.hidden = true;
     try {
@@ -834,16 +1656,28 @@ const orte = await meineOrte();
           lat,
           lng,
           dauer: Math.round(performance.now() - z.geoeffnet),
+          ...(z.ich && { ich: z.ich }),
         }),
       });
-      if (antwort.ok) {
+      const ergebnis = (await antwort.json().catch(() => ({}))) as { fehler?: string; ort?: Record<string, unknown>; sichtbar?: boolean };
+      if (antwort.status === 401 && z.ich) {
+        geraetVergessen(z);
+        fehler.textContent = 'Die Freischaltung gilt nicht mehr. Bitte im Admin neu freischalten oder als Empfehlung senden.';
+        fehler.hidden = false;
+      } else if (antwort.ok) {
         formular.reset();
-        formular.hidden = true;
-        document.querySelector<HTMLElement>('[data-danke]')!.hidden = false;
-        platzierenBeenden(z);
+        document.querySelector<HTMLDialogElement>('[data-dialog]')?.close();
+        waehlenBeenden(z);
+        if (ergebnis.ort) {
+          const ort = ausServer(ergebnis.ort);
+          hinzufuegen(z, [ort], true);
+          auswaehlen(z, ort.id, true);
+          toast(ort.art === 'ich' ? 'Dein Ort ist jetzt auf der Karte.' : 'Danke! Dein Ort ist jetzt auf der Karte.');
+        } else {
+          toast(ergebnis.sichtbar === false ? 'Danke! Dein Ort erscheint, sobald er freigegeben ist.' : 'Danke für deine Empfehlung!');
+        }
       } else {
-        const { fehler: text } = (await antwort.json().catch(() => ({}))) as { fehler?: string };
-        fehler.textContent = text || 'Das hat leider nicht geklappt. Bitte versuch es später nochmal.';
+        fehler.textContent = ergebnis.fehler || 'Das hat leider nicht geklappt. Bitte versuch es später nochmal.';
         fehler.hidden = false;
       }
     } catch {
@@ -853,72 +1687,148 @@ const orte = await meineOrte();
     knopf.disabled = false;
   }
 
+  // ---------- Einrichten ----------
+
   function einrichten() {
     const element = document.querySelector<HTMLElement>('[data-karte]');
     if (!element || element.dataset.bereit !== undefined) return;
     element.dataset.bereit = '';
+    const buehne = element.closest<HTMLElement>('[data-buehne]')!;
+    aufGeraetepixel(element);
     // Ganze Zoomstufen: Kartenbilder in Originalgröße, scharf und ohne Hochskalieren
-    const karte = L.map(element, { attributionControl: false, scrollWheelZoom: false });
-    L.control.attribution({ position: 'bottomleft', prefix: false }).addTo(karte);
-    L.tileLayer(KACHELN, { maxZoom: 18, attribution: NAMENSNENNUNG }).addTo(karte);
-    // Mausrad zoomt erst, wenn man in die Karte geklickt hat, sonst scrollt die Seite
-    karte.on('focus', () => karte.scrollWheelZoom.enable());
-    karte.on('blur', () => karte.scrollWheelZoom.disable());
+    const karte = L.map(element, { attributionControl: false, zoomControl: false, scrollWheelZoom: false, maxZoom: 18 });
+    L.control.attribution({ position: 'bottomright', prefix: false }).addTo(karte);
+    L.control.zoom({ position: 'bottomright', zoomInTitle: 'Hineinzoomen', zoomOutTitle: 'Herauszoomen' }).addTo(karte);
+    // Kacheln erst laden, wenn der Ausschnitt mit allen Orten feststeht (sonst lädt erst ganz Deutschland)
+    const kacheln = L.tileLayer(KACHELN, { maxZoom: 18, attribution: NAMENSNENNUNG });
+    const kachelnLaden = () => karte.hasLayer(kacheln) || kacheln.addTo(karte);
 
     const z: Zustand = {
       karte,
-      ebenen: { ich: L.layerGroup(), empfehlung: L.layerGroup(), besucht: L.layerGroup() },
+      buehne,
+      ortkarte: buehne.querySelector<HTMLElement>('[data-ortkarte]')!,
+      ebenen: { ich: L.layerGroup(), empfehlung: L.layerGroup() },
       marker: new Map(),
       orte: [],
       filter: 'alle',
       api: element.dataset.api || '',
-      wahl: null,
+      gewaehlt: null,
+      hervor: null,
+      zurueck: null,
+      vorschlag: '',
       geoeffnet: 0,
+      beruehrt: false,
+      ich: '',
     };
     aktiv = z;
+    const geraet = element.dataset.api ? geraetLesen() : { schluessel: '', neu: false };
+    z.ich = geraet.schluessel;
+    geraetAnzeigen(z);
+    if (geraet.neu) toast('Freigeschaltet: Orte, die du hier setzt, erscheinen als deine.');
+
+    // Mausrad: in der geteilten Ansicht (Karte so hoch wie das Fenster) zoomt es direkt,
+    // sonst erst nach einem Klick in die Karte, damit die Seite weiter scrollt
+    const mausrad = () => (geteilt(z) ? karte.scrollWheelZoom.enable() : karte.scrollWheelZoom.disable());
+    mausrad();
+    karte.on('resize', () => {
+      mausrad();
+      aufGeraetepixel(element);
+    });
+    // Nach dem Laden der Schriften ändern sich die Texthöhen über der Karte
+    document.fonts?.ready.then(() => {
+      if (aktiv !== z) return;
+      aufGeraetepixel(element);
+      karte.invalidateSize(false);
+    });
+    karte.on('focus', () => karte.scrollWheelZoom.enable());
+    karte.on('blur', mausrad);
+    const beruehrt = () => (z.beruehrt = true);
+    element.addEventListener('pointerdown', beruehrt, { once: true });
+    element.addEventListener('wheel', beruehrt, { once: true, passive: true });
+
     hinzufuegen(z, JSON.parse(element.dataset.orte || '[]'));
     einpassen(z);
 
-    // ?ort=… springt zu einem Ort (z. B. vom Beitrag aus), ?empfehlen startet das Empfehlen
+    // ?ort=… öffnet einen Ort (z. B. vom Beitrag aus), ?empfehlen startet das Empfehlen
     const parameter = new URLSearchParams(location.search);
     const ziel = parameter.get('ort');
-    const sofort = Boolean(ziel && z.marker.has(ziel));
-    if (sofort) zeigen(z, ziel!);
+    if (ziel && z.marker.has(ziel)) auswaehlen(z, ziel, true);
     if (z.api) {
+      const spaetestens = window.setTimeout(kachelnLaden, 1200);
       empfehlungenLaden(z).then(() => {
-        if (sofort) return;
-        if (ziel && z.marker.has(ziel)) zeigen(z, ziel);
-        else einpassen(z);
+        window.clearTimeout(spaetestens);
+        if (aktiv !== z) return;
+        if (!z.gewaehlt && !z.beruehrt && !buehne.classList.contains('waehlt')) {
+          if (ziel && z.marker.has(ziel)) auswaehlen(z, ziel, true);
+          else einpassen(z);
+        }
+        kachelnLaden();
       });
-    }
+    } else kachelnLaden();
 
     karte.on('click', (e: L.LeafletMouseEvent) => {
-      if (element.classList.contains('waehlt')) wahlSetzen(z, e.latlng);
+      if (buehne.classList.contains('waehlt')) karte.panTo(e.latlng, { animate: !bewegungArm() });
+      else schliessen(z);
     });
+    karte.on('movestart', () => buehne.classList.add('bewegt'));
+    karte.on('moveend', () => buehne.classList.remove('bewegt'));
 
+    // Ein Tipp zeigt nur diese Art, ein zweiter wieder alle
     document.querySelectorAll<HTMLElement>('[data-filter]').forEach((k) =>
-      k.addEventListener('click', () => filtern(z, k.dataset.filter as Art | 'alle')),
+      k.addEventListener('click', () => {
+        const art = k.dataset.filter as Art;
+        filtern(z, z.filter === art ? 'alle' : art);
+        if (!z.gewaehlt && z.orte.some((o) => z.filter === 'alle' || o.art === z.filter)) einpassen(z);
+      }),
     );
-    document.querySelector('[data-ortsliste]')?.addEventListener('click', (e) => {
-      const knopf = (e.target as Element).closest<HTMLElement>('[data-zeige]');
-      if (knopf?.dataset.zeige) zeigen(z, knopf.dataset.zeige);
+    z.ortkarte.querySelector('[data-ortkarte-zu]')?.addEventListener('click', () => schliessen(z));
+    z.ortkarte.querySelector('[data-k="mehr"]')?.addEventListener('click', (e) => {
+      z.ortkarte.classList.add('ganz');
+      (e.currentTarget as HTMLElement).hidden = true;
     });
+    const liste = document.querySelector<HTMLElement>('[data-ortsliste]');
+    liste?.addEventListener('click', (e) => {
+      const knopf = (e.target as Element).closest<HTMLElement>('[data-zeige]');
+      if (!knopf?.dataset.zeige) return;
+      sichtbarMachen(buehne);
+      auswaehlen(z, knopf.dataset.zeige, true);
+    });
+    liste?.addEventListener('mouseover', (e) => hervorheben(z, (e.target as Element).closest<HTMLElement>('[data-zeige]')?.dataset.zeige ?? null));
+    liste?.addEventListener('mouseleave', () => hervorheben(z, null));
 
     if (!z.api) return;
-    document.querySelector('[data-empfehlen]')?.addEventListener('click', () => platzierenStarten(z));
-    document.querySelector('[data-abbrechen]')?.addEventListener('click', () => platzierenBeenden(z));
-    document.querySelector('[data-weiter]')?.addEventListener('click', () => dialogOeffnen(z));
+
+    // Verwalten auf Johannes' Gerät: Löschen mit zweitem Tipp zur Sicherheit
+    const k = <T extends HTMLElement = HTMLElement>(name: string) => z.ortkarte.querySelector<T>(`[data-k="${name}"]`)!;
+    let loeschenZeit = 0;
+    k('loeschen').addEventListener('click', () => {
+      const knopf = k('loeschen');
+      if (!z.gewaehlt) return;
+      if (!knopf.classList.contains('sicher')) {
+        knopf.classList.add('sicher');
+        k('loeschen-text').textContent = 'Wirklich löschen?';
+        window.clearTimeout(loeschenZeit);
+        loeschenZeit = window.setTimeout(() => {
+          knopf.classList.remove('sicher');
+          k('loeschen-text').textContent = 'Löschen';
+        }, 4000);
+        return;
+      }
+      window.clearTimeout(loeschenZeit);
+      loeschen(z, z.gewaehlt);
+    });
+
+    document.querySelectorAll('[data-empfehlen]').forEach((k) => k.addEventListener('click', () => waehlenStarten(z)));
+    document.querySelector('[data-abbrechen]')?.addEventListener('click', () => waehlenBeenden(z));
+    document.querySelector('[data-hier]')?.addEventListener('click', () => hierIstEs(z));
     document.querySelector('[data-standort]')?.addEventListener('click', () => {
       navigator.geolocation?.getCurrentPosition(
         (pos) => {
-          const ort = L.latLng(pos.coords.latitude, pos.coords.longitude);
-          karte.setView(ort, 16, { animate: !bewegungArm() });
-          wahlSetzen(z, ort);
+          karte.setView([pos.coords.latitude, pos.coords.longitude], 17, { animate: !bewegungArm() });
+          wahlText(WAHL_TEXT);
         },
-        () => {
-          const text = document.querySelector('[data-platzieren-text]');
-          if (text) text.textContent = 'Dein Standort ist nicht verfügbar. Tippe den Ort einfach auf der Karte an.';
-        },
+        () => wahlText('Dein Standort ist nicht verfügbar. Such den Ort oder schieb die Karte hin.'),
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
       );
     });
     document.querySelector('[data-suche]')?.addEventListener('submit', (e) => {
@@ -927,22 +1837,33 @@ const orte = await meineOrte();
       suchen(z, feld.value);
     });
     const dialog = document.querySelector<HTMLDialogElement>('[data-dialog]');
-    dialog?.querySelectorAll('[data-schliessen]').forEach((k) => k.addEventListener('click', () => dialog.close()));
+    dialog?.querySelector('[data-schliessen]')?.addEventListener('click', () => dialog.close());
+    // Tipp neben das Sheet schließt es
+    dialog?.addEventListener('click', (e) => {
+      if (e.target === dialog) dialog.close();
+    });
     document.querySelector<HTMLFormElement>('[data-formular]')?.addEventListener('submit', (e) => {
       e.preventDefault();
       senden(z, e.currentTarget as HTMLFormElement);
     });
-    if (parameter.has('empfehlen')) platzierenStarten(z);
+    if (parameter.has('empfehlen')) waehlenStarten(z);
   }
 
   const w = window as Window & { __jbBrixmap?: boolean };
   if (!w.__jbBrixmap) {
     w.__jbBrixmap = true;
     document.addEventListener('astro:page-load', einrichten);
+    // Escape schließt die Ortskarte bzw. bricht das Empfehlen ab (offene Dialoge schließen sich selbst)
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape' || !aktiv || document.querySelector('dialog[open]')) return;
+      if (aktiv.buehne.classList.contains('waehlt')) waehlenBeenden(aktiv);
+      else schliessen(aktiv);
+    });
     // Beim Verlassen der Seite die Karte sauber abbauen
     document.addEventListener('astro:before-swap', () => {
       aktiv?.karte.remove();
       aktiv = null;
+      window.clearTimeout(toastZeit);
     });
   }
   einrichten();

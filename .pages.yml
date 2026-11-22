@@ -1,12 +1,14 @@
 # Pages CMS – Redaktionsoberfläche für johannesbrix.com
-# Anmelden: https://app.pagescms.org mit GitHub → dieses Repository → Branch main.
-# Doku: https://pagescms.org/docs/  (Phase 7 im Bauplan prüft diese Datei gegen die aktuelle Doku.)
+# Anmelden: https://app.pagescms.org mit GitHub → Repository johannesbrix/website → Branch main.
+# Doku: https://pagescms.org/docs/
+# Aufbau wie die Website (Johannes, 22.11.2026: „etwas unübersichtlich“): oben die Beiträge, dann je
+# Seite genau die Texte, die dort stehen. Jedes Feld sagt, wo es auf der Website erscheint.
 
 media:
   - name: bilder
     label: Bilder
     input: src/assets/bilder
-    output: ../../assets/bilder      # relativ zu src/content/<sammlung>/<datei>.md
+    output: ../../assets/bilder      # relativ zu src/content/<ordner>/<datei>
     extensions: [jpg, jpeg, png, webp] # kein HEIC: das kann der Build nicht verarbeiten
     rename: safe
   - name: musik
@@ -17,8 +19,9 @@ media:
     rename: safe
 
 content:
+  # ---------- Beiträge: das, was du am häufigsten brauchst ----------
   - name: beitraege
-    label: Beiträge & Projekte
+    label: Beiträge
     type: collection
     path: src/content/beitraege
     filename: "{primary}.md"
@@ -30,12 +33,14 @@ content:
         sort: datum
         order: desc
     fields:
+      # Das Wichtigste zuerst
       - name: titel
         label: Titel
         type: string
         required: true
       - name: datum
         label: Datum
+        description: Steht im Beitrag; danach sind die Projekte sortiert.
         type: date
         required: true
         options:
@@ -46,40 +51,18 @@ content:
         required: true
         options:
           values:
-            - { name: gourmet, label: Gourmet }
             - { name: bauen, label: Bauen }
+            - { name: gourmet, label: Gourmet }
             - { name: sport, label: Sport }
             - { name: menschen, label: "Menschen & Community" }
-      - name: tags
-        label: Tags
-        type: string
-        list: true
-      - name: status
-        label: Status (nur bei Projekten)
-        type: select
-        options:
-          values:
-            - { name: geplant, label: Geplant }
-            - { name: laeuft, label: Läuft }
-            - { name: fertig, label: Fertig }
-            - { name: pausiert, label: Pausiert }
-      - name: zeitraum
-        label: Zeitraum (z. B. „seit Oktober 2026“)
-        type: string
-      - name: aktiv
-        label: Auf der Startseite unter „Gerade dran“ zeigen
-        type: boolean
-        default: false
       - name: titelbild
         label: Titelbild
+        description: Erscheint als Cover oben im Beitrag (wie bei Notion) und als Bild in den Projektlisten. Querformat wirkt am besten; die Mitte des Bildes bleibt immer sichtbar.
         type: image
         options:
           media: bilder
       - name: titelbild_alt
-        label: Bildbeschreibung (Was ist zu sehen?)
-        type: string
-      - name: bildunterschrift
-        label: Bildunterschrift (optional)
+        label: Bildbeschreibung (Was ist auf dem Titelbild zu sehen?)
         type: string
       - name: body
         label: Story
@@ -91,25 +74,42 @@ content:
         label: Zum Mitnehmen
         description: 1–2 Sätze, was der Leser aus dem Beitrag für sich mitnehmen kann. Steht hervorgehoben unter der Story.
         type: text
-      - name: orte
-        label: Orte (erscheinen mit ☀️ auf der Brixmap)
+      # Optional
+      - name: tags
+        label: Tags (optional)
+        type: string
+        list: true
+      - name: status
+        label: Status (nur bei Projekten)
+        type: select
+        options:
+          values:
+            - { name: geplant, label: Geplant }
+            - { name: laeuft, label: Läuft }
+            - { name: fertig, label: Fertig }
+            - { name: pausiert, label: Pausiert }
+      - name: aktiv
+        label: Auf der Startseite unter „Gerade dran“ zeigen
+        type: boolean
+        default: false
+      - name: bildunterschrift
+        label: Bildunterschrift (optional, klein unter dem Cover)
+        type: string
+      - name: galerie
+        label: Galerie (weitere Bilder unter der Story)
         type: object
         list: true
         fields:
-          - name: name
-            label: Name des Orts
+          - name: bild
+            label: Bild
+            type: image
+            options:
+              media: bilder
+          - name: alt
+            label: Bildbeschreibung
             type: string
-            required: true
-          - name: koordinaten
-            label: Koordinaten
-            description: "So: 48.13743, 11.57549 – in Google Maps per Rechtsklick (am Handy: lange auf den Ort tippen) kopieren."
-            type: string
-            required: true
-          - name: notiz
-            label: Notiz für die Karte (optional)
-            type: text
       - name: updates
-        label: Updates (Bautagebuch)
+        label: Updates (Bautagebuch, das Neueste steht oben)
         type: object
         list: true
         fields:
@@ -129,69 +129,192 @@ content:
           - name: bild_alt
             label: Bildbeschreibung
             type: string
-      - name: galerie
-        label: Galerie
+      - name: orte
+        label: Orte zum Beitrag (erscheinen orange auf der Brixmap, mit Link zum Beitrag)
+        description: Einfacher geht es direkt auf der Karte mit deinem freigeschalteten Handy. Hier nur, wenn der Ort zum Beitrag verlinken soll.
         type: object
         list: true
         fields:
-          - name: bild
-            label: Bild
-            type: image
-            options:
-              media: bilder
-          - name: alt
-            label: Bildbeschreibung
+          - name: name
+            label: Name des Orts
             type: string
+            required: true
+          - name: koordinaten
+            label: Koordinaten
+            description: "So: 48.13743, 11.57549 – in Google Maps per Rechtsklick (am Handy: lange auf den Ort tippen) kopieren."
+            type: string
+            required: true
+          - name: notiz
+            label: Notiz für die Karte (optional)
+            type: text
       - name: entwurf
-        label: Entwurf (nicht veröffentlichen)
+        label: Entwurf (noch nicht veröffentlichen)
         type: boolean
         default: false
 
-  - name: momente
-    label: Momente
-    type: collection
-    path: src/content/momente
-    filename: "{primary}.md"
-    view:
-      fields: [titel, datum]
-      primary: titel
-      sort: [datum, titel]
-      default:
-        sort: datum
-        order: desc
+  # ---------- Startseite ----------
+  - name: startseite
+    label: Startseite
+    type: file
+    path: src/content/einstellungen/startseite.yml
+    format: yaml
     fields:
-      - name: titel
-        label: Titel
-        type: string
+      - name: intro
+        label: Intro (der große Text neben deinem Porträt)
+        description: Der Punkt am Ende wird automatisch zum orangen Punkt. Den Text zur Brixmap auf der Startseite findest du unter „Brixmap“, den zu Rise & Shine unter „Rise & Shine › Band“.
+        type: text
         required: true
-      - name: datum
-        label: Wann ist es passiert?
-        type: date
-        required: true
-        options:
-          format: yyyy-MM-dd
-      - name: ort
-        label: Ort (grob, z. B. Stadt – nie eine Adresse)
-        type: string
-      - name: bild
-        label: Bild (optional)
+      - name: portrait
+        label: Porträt
         type: image
         options:
           media: bilder
-      - name: bild_alt
-        label: Bildbeschreibung
+      - name: portrait_alt
+        label: Bildbeschreibung Porträt
         type: string
+
+  # ---------- Rise & Shine ----------
+  - name: rise
+    label: Rise & Shine
+    type: group
+    items:
+      - name: band
+        label: Band (oben auf Rise & Shine und auf der Startseite)
+        type: file
+        path: src/content/einstellungen/band.yml
+        format: yaml
+        fields:
+          - name: motto
+            label: Überschrift
+            type: string
+          - name: motto_text
+            label: Text unter der Überschrift
+            type: text
+          - name: klick
+            label: Klick-Knopf
+            type: object
+            fields:
+              - { name: knopf, label: Text auf dem Knopf, type: string }
+              - { name: zaehler, label: Wort hinter der Zahl (z. B. „geklickt“), type: string }
+
+      - name: geschichte
+        label: Geschichte („Warum Rise and Shine“)
+        type: file
+        path: src/content/seiten/rise-and-shine.md
+        format: yaml-frontmatter
+        fields:
+          - name: titel
+            label: Seitentitel (Browser-Tab)
+            type: string
+            required: true
+          - name: body
+            label: Deine Geschichte
+            type: rich-text
+            options:
+              format: markdown
+              media: false
+
+      - name: zitate
+        label: Zitate
+        type: file
+        path: src/content/einstellungen/zitate.yml
+        format: yaml
+        list: true
+        fields:
+          - name: text
+            label: Zitat
+            description: Kurz halten, etwa bis 60 Zeichen. Das längste Zitat bestimmt die Höhe der Zitatkarte im Band.
+            type: text
+            required: true
+          - name: von
+            label: Von
+            type: string
+          - name: quelle
+            label: Quelle
+            type: string
+
+      - name: videos
+        label: Videos und Reden
+        type: file
+        path: src/content/einstellungen/videos.yml
+        format: yaml
+        list: true
+        fields:
+          - name: titel
+            label: Titel
+            type: string
+            required: true
+          - name: link
+            label: YouTube-Link
+            type: string
+            required: true
+          - name: von
+            label: Kanal
+            type: string
+          - name: warum
+            label: Warum es dich bewegt (optional)
+            type: text
+          - name: art
+            label: Regal
+            type: select
+            options:
+              values:
+                - { name: motivation, label: Videos }
+                - { name: rede, label: Reden }
+          - name: geschichte
+            label: Groß neben deiner Geschichte zeigen (nur bei einem Video)
+            type: boolean
+            default: false
+
+      - name: buecher
+        label: Bücher
+        type: file
+        path: src/content/einstellungen/buecher.yml
+        format: yaml
+        list: true
+        fields:
+          - name: titel
+            label: Titel
+            type: string
+            required: true
+          - name: autor
+            label: Autor
+            type: string
+          - name: mitgenommen
+            label: Was ich mitgenommen habe (1–2 Sätze, steht unter dem Buch)
+            type: text
+          - name: foto
+            label: Foto (optional, am besten dein eigenes Exemplar; ohne Foto gibt es ein schlichtes Cover)
+            type: image
+            options:
+              media: bilder
+          - name: foto_alt
+            label: Bildbeschreibung
+            type: string
+          - name: link
+            label: Link (optional)
+            type: string
+
+  # ---------- Brixmap ----------
+  - name: brixmap
+    label: Brixmap
+    type: file
+    path: src/content/seiten/brixmap.md
+    format: yaml-frontmatter
+    fields:
+      - name: titel
+        label: Seitentitel (Browser-Tab)
+        type: string
+        required: true
       - name: body
-        label: Geschichte
+        label: Text (oben auf der Karte und im Brixmap-Kasten der Startseite)
+        description: Ein, zwei Sätze. Orte setzt du direkt auf der Karte, nicht hier.
         type: rich-text
         options:
           format: markdown
           media: false
-      - name: entwurf
-        label: Entwurf (nicht veröffentlichen)
-        type: boolean
-        default: false
 
+  # ---------- Projekte: die vier Bereiche (Filter und Bereichsseiten) ----------
   - name: bereiche
     label: Bereiche
     type: collection
@@ -211,17 +334,17 @@ content:
         type: string
         required: true
       - name: navtitel
-        label: Kurzname für die Navigation
+        label: Kurzname (Filter-Chips bei Projekte)
         type: string
       - name: reihenfolge
-        label: Reihenfolge
+        label: Reihenfolge (Filter-Chips und Liste)
         type: number
         required: true
       - name: untertitel
-        label: Untertitel (Kachel auf der Startseite und Bereichsseite)
+        label: Untertitel (auf der Bereichsseite)
         type: string
       - name: bild
-        label: Foto
+        label: Foto (auf der Bereichsseite)
         type: image
         options:
           media: bilder
@@ -229,211 +352,86 @@ content:
         label: Bildbeschreibung
         type: string
       - name: body
-        label: Intro (2–4 Sätze)
+        label: Intro (2–4 Sätze, auf der Bereichsseite)
         type: rich-text
         options:
           format: markdown
           media: false
 
-  - name: seiten
-    label: Seiten (Rise & Shine, Brixmap, Impressum, Datenschutz)
-    type: collection
-    path: src/content/seiten
-    # Rise & Shine, Brixmap, Impressum und Datenschutz sind feste Seiten, deshalb nur bearbeiten
-    operations:
-      create: false
-      rename: false
-      delete: false
-    view:
-      fields: [titel]
-      primary: titel
-    fields:
-      - name: titel
-        label: Titel
-        type: string
-        required: true
-      - name: body
-        label: Text
-        type: rich-text
-        options:
-          format: markdown
-          media: false
-
-  - name: zitate
-    label: Zitate
-    type: file
-    path: src/content/einstellungen/zitate.yml
-    format: yaml
-    list: true
-    operations:
-      delete: false
-    fields:
-      - name: text
-        label: Zitat
-        description: Kurz halten, etwa bis 60 Zeichen. Das längste Zitat bestimmt die Höhe des Zitatfelds unter dem Klick-Knopf.
-        type: text
-        required: true
-      - name: von
-        label: Von
-        type: string
-      - name: quelle
-        label: Quelle
-        type: string
-
-  - name: videos
-    label: Videos (Rise & Shine)
-    type: file
-    path: src/content/einstellungen/videos.yml
-    format: yaml
-    list: true
-    operations:
-      delete: false
-    fields:
-      - name: titel
-        label: Titel
-        type: string
-        required: true
-      - name: link
-        label: YouTube-Link
-        type: string
-        required: true
-      - name: von
-        label: Kanal
-        type: string
-      - name: warum
-        label: Warum es dich bewegt (optional)
-        type: text
-      - name: geschichte
-        label: Unter meiner Geschichte zeigen (nur bei einem Video)
-        type: boolean
-        default: false
-
-  - name: buecher
-    label: Bücher (Rise & Shine)
-    type: file
-    path: src/content/einstellungen/buecher.yml
-    format: yaml
-    list: true
-    operations:
-      delete: false
-    fields:
-      - name: titel
-        label: Titel
-        type: string
-        required: true
-      - name: autor
-        label: Autor
-        type: string
-      - name: mitgenommen
-        label: Was ich mitgenommen habe (1–2 Sätze)
-        type: text
-      - name: foto
-        label: Foto (am besten dein eigenes Exemplar)
-        type: image
-        options:
-          media: bilder
-      - name: foto_alt
-        label: Bildbeschreibung
-        type: string
-      - name: link
-        label: Link (optional)
-        type: string
-
-  - name: orte
-    label: Meine Orte (Brixmap)
-    type: file
-    path: src/content/einstellungen/orte.yml
-    format: yaml
-    list: true
-    operations:
-      delete: false
-    fields:
-      - name: name
-        label: Name des Orts
-        type: string
-        required: true
-      - name: kategorie
-        label: Was ist es?
-        type: select
-        options:
-          values:
-            - { name: essen, label: "Essen & Trinken" }
-            - { name: hidden-spot, label: Hidden Spot }
-            - { name: treffpunkt, label: Treffpunkt }
-            - { name: sonstiges, label: Sonstiges }
-      - name: koordinaten
-        label: Koordinaten
-        description: "So: 48.13743, 11.57549 – in Google Maps per Rechtsklick (am Handy: lange auf den Ort tippen) kopieren."
-        type: string
-        required: true
-      - name: notiz
-        label: Notiz
-        type: text
-      - name: link
-        label: Link (optional, z. B. zu einem Beitrag oder zur Website des Orts)
-        type: string
-
-  - name: einstellungen
-    label: Einstellungen
-    type: file
-    path: src/content/einstellungen/site.yml
-    format: yaml
-    operations:
-      delete: false
-    fields:
-      - name: name
-        label: Name
-        type: string
-        required: true
-      - name: beschreibung
-        label: Kurzbeschreibung für Google & Link-Vorschau (max. 155 Zeichen)
-        type: text
-      - name: intro
-        label: Intro-Satz auf der Startseite
-        type: text
-        required: true
-      - name: portrait
-        label: Porträt
-        type: image
-        options:
-          media: bilder
-      - name: portrait_alt
-        label: Bildbeschreibung Porträt
-        type: string
-      - name: motto
-        label: Motto
-        type: string
-      - name: motto_text
-        label: Text unter „Rise and Shine“
-        type: text
-      - name: links
-        label: Links
-        type: object
+  # ---------- Allgemein ----------
+  - name: allgemein
+    label: Allgemein
+    type: group
+    items:
+      - name: einstellungen
+        label: Name, Links und Musik
+        type: file
+        path: src/content/einstellungen/site.yml
+        format: yaml
         fields:
-          - { name: instagram, label: Instagram, type: string }
-          - { name: strava, label: Strava, type: string }
-          - { name: substack, label: Substack (Blog), type: string }
-          - { name: linkedin, label: LinkedIn (Lebenslauf), type: string }
-      - name: plattenteller
-        label: Plattenteller
-        type: object
+          - name: name
+            label: Name (Seitentitel und Footer)
+            type: string
+            required: true
+          - name: beschreibung
+            label: Kurzbeschreibung für Google und die Link-Vorschau (max. 155 Zeichen)
+            type: text
+          - name: links
+            label: Links (Footer und Menü)
+            type: object
+            fields:
+              - { name: instagram, label: Instagram, type: string }
+              - { name: strava, label: Strava, type: string }
+              - { name: substack, label: Substack (Blog), type: string }
+              - { name: linkedin, label: LinkedIn (Lebenslauf), type: string }
+          - name: plattenteller
+            label: Musik (Plattenteller)
+            type: object
+            fields:
+              - name: datei
+                label: Song (nur lizenzfreie Musik!)
+                type: file
+                options:
+                  media: musik
+              - { name: titel, label: Songtitel, type: string }
+              - { name: interpret, label: Interpret, type: string }
+              - { name: lizenz, label: Lizenzhinweis, type: string }
+              - name: fliegende_platte
+                label: Fliegende Platte
+                description: Eine Platte fliegt über die Seite; ein Tipp darauf startet die Musik
+                type: boolean
+                default: true
+
+      - name: impressum
+        label: Impressum
+        type: file
+        path: src/content/seiten/impressum.md
+        format: yaml-frontmatter
         fields:
-          - name: datei
-            label: Song (nur lizenzfreie Musik!)
-            type: file
+          - name: titel
+            label: Titel
+            type: string
+            required: true
+          - name: body
+            label: Text
+            type: rich-text
             options:
-              media: musik
-          - { name: titel, label: Songtitel, type: string }
-          - { name: interpret, label: Interpret, type: string }
-          - { name: lizenz, label: Lizenzhinweis, type: string }
-          - name: fliegende_platte
-            label: Fliegende Platte (Easter Egg)
-            description: Musik startet beim ersten Tippen, eine Platte fliegt über die Seite
-            type: boolean
-            default: true
-      - name: klick
-        label: Klick-Knopf
-        type: object
+              format: markdown
+              media: false
+
+      - name: datenschutz
+        label: Datenschutz
+        type: file
+        path: src/content/seiten/datenschutz.md
+        format: yaml-frontmatter
         fields:
-          - { name: knopf, label: Text auf dem Knopf, type: string }
-          - { name: zaehler, label: Wort hinter der Zahl (z. B. „geklickt“), type: string }
+          - name: titel
+            label: Titel
+            type: string
+            required: true
+          - name: body
+            label: Text
+            type: rich-text
+            options:
+              format: markdown
+              media: false

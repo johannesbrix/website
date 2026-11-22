@@ -46,17 +46,17 @@ Designrichtung: **B „Bild“**, überarbeitet mit deinen Notizen.
 Dein Song ist eingebaut: „Gypsy Jazz“ von Aurec aus Pixabay (2:15 Minuten, läuft in Schleife). Die Pixabay Content License erlaubt die Nutzung kostenlos und ohne Namensnennung. Nur als einzelne Datei weiterverkaufen darfst du ihn nicht.
 
 So verhält sich die Seite:
-- Beim Laden soll die Musik sofort starten. Browser lassen Ton aber erst nach der ersten Berührung zu, deshalb startet sie praktisch beim ersten Tippen oder Klick irgendwo auf der Seite.
-- Eine kleine Platte fliegt über den Bildschirm und prallt an den Rändern ab. Antippen hält Musik und Platte an, sie bleibt dann an ihrer Stelle stehen. Nochmal antippen, und beides läuft weiter. Läuft noch keine Musik, startet ein Tipp sie.
-- Die Footer-Platte schaltet dieselbe Musik. Läuft sie, steht daneben „Läuft: Gypsy Jazz – Aurec“.
+- Die Musik startet nur, wenn jemand auf eine Platte oder Play im Footer tippt (dein Wunsch vom 22.11.2026). Kein Autoplay, und Tippen irgendwo sonst auf der Seite startet nichts.
+- Eine kleine Platte fliegt über den Bildschirm und prallt an den Rändern ab. Ein Tipp darauf startet die Musik. Nochmal antippen hält Musik und Platte an, sie bleibt dann an ihrer Stelle stehen.
+- Der Player im Footer schaltet dieselbe Musik (Platte oder Play-Knopf). Der Platten-Knopf daneben blendet die fliegende Platte aus und wieder ein.
 - Nach dem Anhalten geht es nie von vorn los. Platte und Song machen dort weiter, wo sie standen.
 - Beim Seitenwechsel läuft die Musik weiter.
 - Wer die Platte anhält, bei dem bleibt sie auch beim nächsten Besuch aus.
 - Bei „Bewegung reduzieren“ fliegt und dreht sich nichts. Die Platte parkt dann unten rechts.
 
-**Zitate:** Jeder Klick auf „Wenn du mich klickst …“ zeigt darunter das nächste Zitat mit Autor. Die Liste steht in `zitate.yml`. Sechs Zitate habe ich vorgeschlagen, deine zwei englischen Sprüche stehen am Ende. Tauschen geht auch in Pages CMS unter „Zitate“.
+**Zitate:** Die Zitatkarte über „Wenn du mich klickst …“ zeigt von Anfang an ein Zitat; jeder Klick blendet zum nächsten über. Die Liste steht in `zitate.yml`. Sechs Zitate habe ich vorgeschlagen, deine zwei englischen Sprüche stehen am Ende. Tauschen geht auch in Pages CMS unter „Zitate“.
 
-**Ausschalten oder Song tauschen** geht ohne Code in Pages CMS unter Einstellungen › Plattenteller: Schalter „Fliegende Platte“ oder eine neue Datei. Für einen neuen Song gilt: MP3, 128 bis 192 kbit/s, höchstens etwa 2 bis 3 MB, mit passender Lizenz, und Titel, Interpret und Lizenzhinweis eintragen.
+**Ausschalten oder Song tauschen** geht ohne Code in Pages CMS unter Allgemein › Name, Links und Musik: Schalter „Fliegende Platte“ oder eine neue Datei. Für einen neuen Song gilt: MP3, 128 bis 192 kbit/s, höchstens etwa 2 bis 3 MB, mit passender Lizenz, und Titel, Interpret und Lizenzhinweis eintragen.
 
 ## Neue Beiträge, ohne jedes Mal Claude Code zu fragen
 

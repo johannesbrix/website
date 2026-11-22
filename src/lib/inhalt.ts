@@ -2,10 +2,10 @@ import { getCollection, getEntry, type CollectionEntry } from 'astro:content';
 import { getImage } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 import type { Ort } from './brixmap';
+import type { IconName } from './icons';
 
 export type Beitrag = CollectionEntry<'beitraege'>;
 export type Bereich = CollectionEntry<'bereiche'>;
-export type Moment = CollectionEntry<'momente'>;
 export type Status = NonNullable<Beitrag['data']['status']>;
 
 export const STATUS: Record<Status, string> = {
@@ -34,16 +34,15 @@ export async function bereiche(): Promise<Bereich[]> {
   return (await getCollection('bereiche')).sort((a, b) => a.data.reihenfolge - b.data.reihenfolge);
 }
 
-/** Alle veröffentlichten Momente, die neuesten zuerst. */
-export async function momente(): Promise<Moment[]> {
-  const alle = await getCollection('momente', ({ data }) => !data.entwurf);
-  return alle.sort((a, b) => b.data.datum.getTime() - a.data.datum.getTime());
-}
-
+/** Alle Einstellungen in einem Objekt: site.yml (Allgemein), startseite.yml und band.yml. */
 export async function einstellungen() {
-  const eintrag = await getEntry('site', 'site');
-  if (!eintrag) throw new Error('src/content/einstellungen/site.yml fehlt.');
-  return eintrag.data;
+  const [site, startseite, band] = await Promise.all([
+    getEntry('site', 'site'),
+    getEntry('startseite', 'startseite'),
+    getEntry('band', 'band'),
+  ]);
+  if (!site || !startseite || !band) throw new Error('In src/content/einstellungen/ fehlt site.yml, startseite.yml oder band.yml.');
+  return { ...site.data, ...startseite.data, ...band.data };
 }
 export type Einstellungen = Awaited<ReturnType<typeof einstellungen>>;
 
@@ -65,9 +64,10 @@ export async function buecher() {
 /** ID eines Orts aus einem Beitrag, z. B. für den Link „Auf der Brixmap“. */
 export const beitragsOrtId = (beitragId: string, index: number) => `b-${beitragId}-${index + 1}`;
 
-/** Johannes' Orte (☀️): aus Beiträgen, mit Link zum Beitrag, und aus orte.yml. */
+/** Johannes' Orte aus Beiträgen (orange Pins mit Sonne), mit Link zum Beitrag. Weitere eigene Orte
+ *  setzt er direkt auf der Karte von seinem freigeschalteten Gerät (docs/brixmap.md). */
 export async function meineOrte(): Promise<Ort[]> {
-  const ausBeitraegen = (await beitraege()).flatMap((b) =>
+  return (await beitraege()).flatMap((b) =>
     b.data.orte.map((ort, i): Ort => ({
       id: beitragsOrtId(b.id, i),
       art: 'ich',
@@ -80,31 +80,26 @@ export async function meineOrte(): Promise<Ort[]> {
       linkText: 'Zum Beitrag',
     })),
   );
-  const eigene = (await getCollection('orte'))
-    .sort((a, b) => a.id.localeCompare(b.id))
-    .map(({ id, data }): Ort => ({
-      id: `o-${id}`,
-      art: 'ich',
-      name: data.name,
-      kategorie: data.kategorie,
-      notiz: data.notiz,
-      lat: data.koordinaten.lat,
-      lng: data.koordinaten.lng,
-      link: data.link,
-      linkText: data.link ? (data.link.startsWith('/') ? 'Zum Beitrag' : 'Website') : undefined,
-    }));
-  return [...ausBeitraegen, ...eigene];
 }
 
-/** Plattform-Links für Footer und Handymenü, leere fallen weg. */
+/** Plattform-Links für Footer und Handymenü, leere fallen weg. Der Name ist der Name des Icon-Links. */
 export function plattformen(links: Einstellungen['links']) {
-  return [
-    { name: 'Instagram', href: links.instagram },
-    { name: 'Strava', href: links.strava },
-    { name: 'Blog auf Substack', href: links.substack },
-    { name: 'Lebenslauf auf LinkedIn', href: links.linkedin },
-  ].filter((link): link is { name: string; href: string } => Boolean(link.href));
+  const alle: { name: string; icon: IconName; href?: string }[] = [
+    { name: 'Instagram', icon: 'instagram', href: links.instagram },
+    { name: 'Strava', icon: 'strava', href: links.strava },
+    { name: 'Blog auf Substack', icon: 'substack', href: links.substack },
+    { name: 'Lebenslauf auf LinkedIn', icon: 'linkedin', href: links.linkedin },
+  ];
+  return alle.filter((link): link is { name: string; icon: IconName; href: string } => Boolean(link.href));
 }
+
+/** Icon je Bereich, z. B. für Flächen ohne Foto und die Filter */
+export const BEREICH_ICONS: Record<string, IconName> = {
+  gourmet: 'gourmet',
+  bauen: 'bauen',
+  sport: 'sport',
+  menschen: 'menschen',
+};
 
 // Daten aus dem Frontmatter sind UTC-Mitternacht, deshalb immer in UTC formatieren.
 const KURZ = new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
@@ -134,20 +129,6 @@ export function kurz(text: string, max = 155): string {
   const schnitt = text.slice(0, max - 1);
   const grenze = schnitt.lastIndexOf(' ');
   return `${(grenze > max * 0.6 ? schnitt.slice(0, grenze) : schnitt).replace(/[\s,;:–-]+$/, '')}…`;
-}
-
-// Abkürzungen wie „z. B.“ oder „ca.“ beenden keinen Satz.
-const ABKUERZUNG = /(?:^|\s)(?:[a-zäöüA-ZÄÖÜ]|bzw|ca|etc|evtl|ggf|inkl|usw|vgl|Nr|Dr|St)$/;
-
-/** Der erste Satz eines Markdown-Texts, z. B. für die Momente-Liste. */
-export function ersterSatz(markdown = '', max = 220): string {
-  const text = klartext(markdown);
-  for (const treffer of text.matchAll(/[.!?…]+(?=\s|$)/g)) {
-    const start = treffer.index ?? 0;
-    if (treffer[0] === '.' && ABKUERZUNG.test(text.slice(0, start))) continue;
-    return kurz(text.slice(0, start + treffer[0].length), max);
-  }
-  return kurz(text, max);
 }
 
 /** Bild für Open Graph und JSON-LD: JPEG, höchstens 1200 px breit. */

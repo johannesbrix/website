@@ -1,6 +1,6 @@
 ---
 name: beitrag
-description: Legt aus Johannes' ausgefüllter Vorlage (vorlagen/neuer-beitrag.md) einen neuen Beitrag, ein Projekt-Update oder einen Moment an, inklusive Bilder.
+description: Legt aus Johannes' ausgefüllter Vorlage (vorlagen/neuer-beitrag.md) einen neuen Beitrag oder ein Projekt-Update an, inklusive Bilder.
 disable-model-invocation: true
 argument-hint: "[Ordner oder Datei mit ausgefüllter Vorlage und Bildern, z. B. eingang/sauna]"
 ---
@@ -16,7 +16,7 @@ Lege aus `$ARGUMENTS` einen Inhalt für johannesbrix.com an.
 1. **Vorlage lesen.** Feld „Art“ entscheidet:
    - **Beitrag:** neue Datei in `src/content/beitraege/`.
    - **Update:** Eintrag an `updates` eines bestehenden Beitrags anhängen. Finde den Beitrag über den Titel. Gibt es mehrere Treffer oder keinen, fragst du nach.
-   - **Moment:** neue Datei in `src/content/momente/`.
+   - Momente gibt es seit 22.11.2026 nicht mehr. Steht dort noch „Moment“, fragst du, ob es ein Beitrag (Bereich Menschen & Community) werden soll.
 2. **Text übernehmen, wörtlich.**
    - Du korrigierst nur eindeutige Tipp- und Rechtschreibfehler.
    - Nicht umformulieren, nichts kürzen, nichts ergänzen.
@@ -43,6 +43,6 @@ Lege aus `$ARGUMENTS` einen Inhalt für johannesbrix.com an.
    - Starte `npm run dev` und nenne die URL der neuen Seite.
    - Schau dir die Seite bei 390 px hell und dunkel an.
 7. **Zusammenfassung an Johannes:** Datei und URL, übernommene Felder, Korrekturliste, vorgeschlagene Alt-Texte, offene Fragen.
-8. **Erst nach seinem Okay** committen (`Beitrag: <Titel>` bzw. `Update: <Titel>` bzw. `Moment: <Titel>`) und pushen. Nach dem Push ist der Inhalt in etwa 1 bis 2 Minuten live.
+8. **Erst nach seinem Okay** committen (`Beitrag: <Titel>` bzw. `Update: <Titel>`) und pushen. Vorher `git pull`, weil Johannes auch über Pages CMS direkt auf GitHub speichert. Nach dem Push ist der Inhalt in etwa 1 bis 2 Minuten live.
 
 Die Original-Vorlage und die Bilder im Eingangsordner nicht committen. Der Ordner `eingang/` steht in `.gitignore`.

@@ -1,12 +1,16 @@
 ---
-// Beitragsseite: Zurück-Link, Titel, Tags, Fakten, Titelbild, Story, Updates, Galerie, „Mehr aus …“.
+// Beitragsseite wie eine Notion-Seite: Titelbild als Cover, darunter das Icon des Bereichs, Zurück-Link,
+// Titel, Tags, Fakten (Status, Datum, Brixmap), Story, Updates, Galerie, „Mehr aus …“.
 // Leere Teile erscheinen gar nicht, auch nicht ihre Überschrift.
 import { render } from 'astro:content';
 import Basis from '../../layouts/Basis.astro';
+import Cover from '../../components/Cover.astro';
 import Foto from '../../components/Foto.astro';
 import Galerie from '../../components/Galerie.astro';
+import Icon from '../../components/Icon.astro';
 import Projektliste from '../../components/Projektliste.astro';
 import {
+  BEREICH_ICONS,
   STATUS,
   beitraege,
   beitragsOrtId,
@@ -40,10 +44,12 @@ interface Props {
 }
 
 const { beitrag, bereich, mehr } = Astro.props;
-const { titel, tags, status, zeitraum, titelbild, titelbild_alt, bildunterschrift, galerie, mitnehmen, orte } = beitrag.data;
+const { titel, tags, status, titelbild, titelbild_alt, bildunterschrift, galerie, mitnehmen, orte } = beitrag.data;
 const { Content } = await render(beitrag);
 const hatStory = Boolean(beitrag.body?.trim());
 const updates = [...beitrag.data.updates].sort((a, b) => b.datum.getTime() - a.datum.getTime());
+// Das längste Wort bestimmt, wie groß der Titel höchstens sein darf (.beitrag-titel in global.css)
+const laengstes = Math.max(...titel.split(/\s+/).map((wort) => wort.length));
 
 const story = klartext(beitrag.body);
 const beschreibung = story && !story.startsWith('[') ? kurz(story) : undefined;
@@ -51,9 +57,13 @@ const beschreibung = story && !story.startsWith('[') ? kurz(story) : undefined;
 
 <Basis titel={titel} beschreibung={beschreibung} bild={await teilbild(titelbild)} typ="article" abstand={mehr.length === 0}>
   <article>
-    <div class="beitrag-kopf rahmen">
+    {titelbild && <Cover bild={titelbild} alt={titelbild_alt} unterschrift={bildunterschrift} />}
+    <div class:list={['beitrag-kopf', 'rahmen', { 'mit-cover': titelbild }]}>
+      <span class:list={['seiten-icon', { 'auf-cover': titelbild }]} aria-hidden="true">
+        <Icon name={BEREICH_ICONS[bereich.id] ?? 'projekte'} />
+      </span>
       <a class="zurueck" href={`/${bereich.id}/`}><span class="nur-sr">Zurück zu </span>{bereich.data.titel}</a>
-      <h1 class="beitrag-titel">{titel}</h1>
+      <h1 class="beitrag-titel" style={`--laengstes: ${laengstes}`}>{titel}</h1>
       {tags.length > 0 && <p class="tags">{tags.join(', ')}</p>}
       <dl class="fakten">
         {
@@ -67,17 +77,9 @@ const beschreibung = story && !story.startsWith('[') ? kurz(story) : undefined;
             </div>
           )
         }
-        {
-          zeitraum && (
-            <div>
-              <dt>Zeitraum</dt>
-              <dd>{zeitraum}</dd>
-            </div>
-          )
-        }
         <div>
-          <dt>Bereich</dt>
-          <dd>{bereich.data.titel}</dd>
+          <dt>Datum</dt>
+          <dd><time datetime={isoDatum(beitrag.data.datum)}>{datum(beitrag.data.datum)}</time></dd>
         </div>
         {
           orte.length > 0 && (
@@ -93,23 +95,6 @@ const beschreibung = story && !story.startsWith('[') ? kurz(story) : undefined;
         }
       </dl>
     </div>
-
-    {
-      titelbild && (
-        <div class="rahmen">
-          <figure class="titelbild">
-            <Foto
-              bild={titelbild}
-              alt={titelbild_alt}
-              breiten={[800, 1200, 1600]}
-              sizes="(max-width: 1408px) 92vw, 1280px"
-              sofort
-            />
-            {bildunterschrift && <figcaption class="bildtext">{bildunterschrift}</figcaption>}
-          </figure>
-        </div>
-      )
-    }
 
     {
       (hatStory || mitnehmen || updates.length > 0 || galerie.length > 0) && (

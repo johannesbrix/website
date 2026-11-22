@@ -3,7 +3,7 @@
 // Auf /projekte/ und auf den Bereichsseiten.
 import Foto from './Foto.astro';
 import Status from './Status.astro';
-import { datum, isoDatum, letzteAktivitaet, type Beitrag } from '../lib/inhalt';
+import { BEREICH_ICONS, datum, isoDatum, letzteAktivitaet, type Beitrag } from '../lib/inhalt';
 
 interface Props {
   beitraege: Beitrag[];
@@ -23,6 +23,7 @@ const { beitraege, bereichNamen } = Astro.props;
           <a class="karte" href={`/${b.data.bereich}/${b.id}/`}>
             <Foto
               bild={b.data.titelbild}
+              icon={BEREICH_ICONS[b.data.bereich]}
               breiten={[300, 600]}
               sizes="(max-width: 760px) 100vw, (max-width: 1100px) 50vw, 405px"
             />
@@ -70,6 +71,7 @@ const { beitraege, bereichNamen } = Astro.props;
     font-size: 14px;
   }
   .karte-name {
+    overflow-wrap: anywhere;
     display: block;
     margin-top: 6px;
     font-weight: 600;

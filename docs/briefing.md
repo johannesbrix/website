@@ -69,6 +69,7 @@ Johannes' Entscheidung:
 - **Rhythmus:** mindestens ein Update pro Monat, sonst nach Lust. Johannes plant pro Monat höchstens ein paar Stunden ein.
 
 ### Momente
+**Entfernt am 22.11.2026** (Johannes: „die gibt es aber glaube ich gar nicht mehr und kann man entfernen“). Geschichten mit Menschen werden Beiträge im Bereich Menschen & Community. Ursprünglicher Plan:
 Momente sind kurze Geschichten über besondere Begegnungen mit Menschen. Beispiel: eine Taxifahrt, die Johannes gratis bekam, weil er im Moment aufmerksam gehandelt hat, dazu die kurze Hintergrundgeschichte. Langfristig könnte daraus ein Buch werden. Deshalb liegen die Momente sauber strukturiert als eigene Sammlung vor.
 
 ### Zitate und Werte
@@ -113,7 +114,7 @@ Johannes' Wunsch: verspielt im Detail, ohne Kitsch.
 - **Song (Johannes' Wahl, 23.10.2026):** „Gypsy Jazz“ von Aurec, Pixabay, https://pixabay.com/music/modern-jazz-gypsy-jazz-596436/. Pixabay Content License: kostenlos, keine Namensnennung nötig, nicht als einzelne Datei weiterverkaufen. Pixabay kennzeichnet den Track als „Content ID Registered“ und als KI-generiert.
 
 **Fliegende Platte (Easter Egg, Johannes' Idee):** Die Musik startet direkt, wenn man auf die Seite kommt. Zusätzlich zur Footer-Platte fliegt eine kleine Platte über den Bildschirm und prallt wie ein Pingpongball an den Rändern ab, je nach Bildschirmgröße. Ein Tippen darauf hält sie an. Dann bleibt sie an ihrer Stelle stehen, bis man sie wieder antippt. Läuft noch keine Musik, startet ein Tippen auf eine der beiden Platten sie, und beide drehen sich (Johannes, 23.10.2026).
-- Browser erlauben Ton erst nach der ersten Berührung. Darum startet die Musik in der Praxis beim ersten Tippen oder Klick irgendwo auf der Seite.
+- ~~Browser erlauben Ton erst nach der ersten Berührung. Darum startet die Musik in der Praxis beim ersten Tippen oder Klick irgendwo auf der Seite.~~ Geändert am 22.11.2026: Die Musik startet nur über die Platten und den Player im Footer, nie über andere Klicks und nie von selbst (Johannes: „Der soll einzig und allein durch die Schallplatte und das Modul unten gesteuert werden“).
 - Beim Seitenwechsel läuft die Musik weiter (ClientRouter).
 - Wer sie anhält, bei dem bleibt sie auch beim nächsten Besuch aus.
 - In Pages CMS abschaltbar (`fliegende_platte`).

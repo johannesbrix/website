@@ -3,7 +3,7 @@
 // Bewusst eine Liste (Zeilen), damit sie sich vom Raster der Bereiche abhebt.
 import Foto from './Foto.astro';
 import Status from './Status.astro';
-import type { Beitrag } from '../lib/inhalt';
+import { BEREICH_ICONS, type Beitrag } from '../lib/inhalt';
 
 interface Props {
   beitraege: Beitrag[];
@@ -21,7 +21,7 @@ const { beitraege, bereichNamen } = Astro.props;
       return (
         <li>
           <a class="projekt" href={`/${bereich}/${beitrag.id}/`}>
-            <Foto bild={titelbild} breiten={[160, 320]} sizes="(max-width: 760px) 104px, 148px" />
+            <Foto bild={titelbild} icon={BEREICH_ICONS[bereich]} breiten={[160, 320]} sizes="(max-width: 760px) 104px, 148px" />
             <span>
               <span class="projekt-name">{titel}</span>
               {(bereichNamen || tags.length > 0) && (
@@ -57,6 +57,7 @@ const { beitraege, bereichNamen } = Astro.props;
     border-radius: 12px;
   }
   .projekt-name {
+    overflow-wrap: anywhere;
     display: block;
     font-weight: 600;
     font-size: clamp(20px, 2cqi, 26px);

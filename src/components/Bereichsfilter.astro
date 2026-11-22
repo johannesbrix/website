@@ -1,7 +1,8 @@
 ---
-// Filter für Projekte: „Alle“ plus die vier Bereiche. Jeder Filter ist eine eigene Seite
+// Filter für Projekte: „Alle“ plus die vier Bereiche, mit Icons. Jeder Filter ist eine eigene Seite
 // (/projekte/, /gourmet/ …). Das funktioniert ohne JavaScript, und jeder Filter lässt sich teilen.
-import { bereiche } from '../lib/inhalt';
+import Icon from './Icon.astro';
+import { BEREICH_ICONS, bereiche } from '../lib/inhalt';
 
 interface Props {
   /** Slug des aktiven Bereichs; leer heißt „Alle“ */
@@ -14,11 +15,17 @@ const liste = await bereiche();
 
 <nav class="bereichsfilter rahmen" aria-label="Projekte nach Bereich filtern">
   <ul class="chips">
-    <li><a class="chip" href="/projekte/" aria-current={aktiv ? undefined : 'page'}>Alle</a></li>
+    <li>
+      <a class="chip" href="/projekte/" aria-current={aktiv ? undefined : 'page'}>
+        <Icon name="projekte" />
+        Alle
+      </a>
+    </li>
     {
       liste.map((b) => (
         <li>
           <a class="chip" href={`/${b.id}/`} aria-current={aktiv === b.id ? 'page' : undefined}>
+            <Icon name={BEREICH_ICONS[b.id] ?? 'projekte'} />
             {b.data.navtitel ?? b.data.titel}
           </a>
         </li>
@@ -29,6 +36,19 @@ const liste = await bereiche();
 
 <style>
   .bereichsfilter {
-    padding-top: clamp(16px, 3cqi, 40px);
+    padding-top: clamp(12px, 3cqi, 40px);
+  }
+  /* Am Handy eine Zeile zum Wischen statt Umbruch */
+  @container (max-width: 760px) {
+    .chips {
+      flex-wrap: nowrap;
+      margin-inline: calc(-1 * clamp(20px, 4.4cqi, 64px));
+      padding-inline: clamp(20px, 4.4cqi, 64px);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .chips::-webkit-scrollbar {
+      display: none;
+    }
   }
 </style>

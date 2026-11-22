@@ -62,7 +62,7 @@ Die Tokens liegen auf `:root`. Der Dunkelmodus kommt per `@media (prefers-color-
 | `--r` | 14 px | Kacheln, Karten |
 | — | 12 px (Handy: 10 px) | Vorschaubilder in Listen |
 | `--r-klein` | 10 px | Galerie |
-| Pill | 999 px bzw. halbe Höhe | Buttons (Menü, Klick-Knopf) |
+| Pill | 999 px bzw. halbe Höhe | Buttons (Klick-Knopf, Pills, Chips, runde Icon-Knöpfe) |
 
 Auf dem Handy läuft das Porträt im Hero randlos über die volle Breite und hat dort keinen Radius.
 
@@ -108,9 +108,9 @@ Die Schriften lädst du per Fontsource und nur im Latin-Subset. Familjen Grotesk
 
 **Kopfzeile**
 - 84 px hoch, links „JB“ plus Punkt.
-- Rechts die Navigation (Familjen Grotesk 16/500): Gourmet, Bauen, Sport, Menschen, Rise & Shine.
+- Rechts die Navigation (Familjen Grotesk 16/500): Projekte, Rise & Shine, Brixmap (die drei Türen, siehe unten).
 - Aktive Seite und Hover bekommen eine orange Unterstreichung (2 px, Offset 7 px).
-- Unter 760 px gibt es eine Pill „Menü“ auf `--flaeche`, 44 px hoch. Sie öffnet ein Vollbild-Menü mit großen Links (Familjen Grotesk 600, rund 36 px) und den Plattform-Links. Bedienung: Escape schließt, der Fokus bleibt im Menü gefangen, `aria-expanded` ist gesetzt.
+- Unter 760 px: ein runder Icon-Knopf (44 px, `--flaeche`, zwei Linien statt „Menü“). Er öffnet ein Vollbild-Menü, bewusst typografisch (Johannes, 22.11.2026: Icon-Kacheln „sehen aus wie AI“): oben Logo und Schließen-Kreuz an derselben Stelle wie Logo und Menü-Knopf, dann die drei Türen groß wie Seitentitel (700, 38 bis 52 px, `-0.045em`) mit feinen Linien dazwischen; die aktuelle Seite trägt den orangen Punkt wie „JB.“. Unten nur die Plattformen als Icon-Knöpfe sowie Impressum und Datenschutz, kein Schalter. Der Fokus liegt beim Öffnen auf dem Menü selbst (kein Fokusring auf dem Kreuz). Bedienung: Escape schließt, der Fokus bleibt im Menü gefangen, `aria-expanded` ist gesetzt.
 
 **Hero (Startseite)**
 - Grid `5fr / 6fr`: links das Porträt (4:5, `--r-gross`, `object-position: 50% 40%`), rechts das Intro, vertikal mittig.
@@ -156,18 +156,15 @@ Die Schriften lädst du per Fontsource und nur im Latin-Subset. Familjen Grotesk
 **Rise-and-Shine-Band** (Startseite und Seite `/rise-and-shine/`)
 - Volle Breite, Hintergrund `--text`, Schrift `--grund`, also invertiert. Im Dunkelmodus ist das Band hell.
 - Darin: „Rise and Shine“ plus Punkt, darunter `motto_text` in Literata (höchstens 36em breit, Deckkraft .88).
+- Darunter die **Zitatkarte** (seit 21.11.2026): eine Fläche (`--grund` zu 8 % über dem Band, `--r-gross`, höchstens 640 px breit) mit orangem Anführungszeichen-Icon. Sie zeigt von Anfang an das erste Zitat aus `zitate.yml`; jeder Klick auf den Knopf blendet zum nächsten über (0,35 s, nicht bei Reduced Motion), nach dem letzten wieder von vorn.
+  - Alle Zitate liegen im selben Rasterfeld übereinander. Die Karte ist so hoch wie das längste, kürzere stehen mittig: Nichts springt, und es gibt keinen leeren Platzhalter.
+  - Zitat in Literata aufrecht (nicht kursiv, das spart eine Schriftdatei), 21 bis 28 px, `text-wrap: balance`, in deutschen Anführungszeichen „…“. Darunter `von` in Familjen Grotesk 14/500, Deckkraft .7.
 - Darunter der **Klick-Knopf**: Text aus `site.yml → klick.knopf`, aktuell „Wenn du mich klickst, wird dein Tag garantiert besser!“.
   - Orange Fläche, weiße Schrift, Familjen Grotesk 700, 19 px.
   - Mindestens 58 px hoch, Padding 14/28 px, Radius 29 px.
   - Der Text darf umbrechen und ist linksbündig.
   - Hover: `brightness(1.07)`. Active: `scale(.98)`.
-- Daneben bzw. am Handy darunter: der Zähler „**Y× geklickt**“ (17/500, `tabular-nums`, `aria-live="polite"`).
-  - **v1:** Y zählt die Klicks dieses Besuchers, gespeichert in `localStorage`, umschlossen von try/catch.
-  - **Option für später:** ein globaler Zähler über alle Besucher, siehe Briefing.
-- Darunter das **Zitat**: Jeder Klick zeigt das nächste Zitat aus `zitate.yml`, der Reihe nach und nach dem letzten wieder von vorn. Vor dem ersten Klick steht dort nichts.
-  - Ein `<figure aria-live="polite">`, 26 bis 40 px Abstand zum Knopf, höchstens 34em breit.
-  - Zitat in Literata kursiv, 20 bis 26 px, `text-wrap: balance`, in deutschen Anführungszeichen „…“.
-  - Darunter `von` in Familjen Grotesk 14/500, Deckkraft .75. Fehlt `von`, entfällt die Zeile.
+- Daneben bzw. am Handy darunter: der Zähler „**Y× geklickt**“ (17/500, `tabular-nums`, `aria-live="polite"`). Mit Server zählt er alle Klicks aller Besucher (`docs/brixmap.md`), ohne nur die eigenen (`localStorage`).
 
 **Plattenteller und fliegende Platte**
 
@@ -175,24 +172,23 @@ Song: „Gypsy Jazz“ von Aurec (Pixabay Content License), `public/musik/gypsy-
 
 Die ganze Logik steckt in **`src/lib/musik.js`**. Das Skript ist fertig und getestet, auch mit Seitenwechseln über den ClientRouter. Du baust nur HTML und CSS dazu und änderst das Skript nur, wenn Johannes es will. Referenz: `docs/referenz/*.html` sowie die Screenshots `startseite-*-flieger.png`.
 
-*Footer-Platte*
-- Ein `<button data-platte>` mit 88 px. Das `aria-label` („Song abspielen“ bzw. „Song anhalten“) setzt das Skript.
-- Aufbau: eine Scheibe mit Rillen (`repeating-radial-gradient`), das Etikett (Johannes' Gesicht, 50 %, rund) und eine orange Spindel von 7 px. Darüber liegt ein statischer Glanz (`conic-gradient`), der sich nicht mitdreht.
-- Text daneben in `<p data-platte-text>`:
-  - „Zum Abspielen tippen“
-  - beim Abspielen „Läuft: Gypsy Jazz – Aurec“. Das setzt das Skript aus `data-titel` und `data-interpret` am Audio-Element.
-  - ohne Song: „Zum Drehen tippen“
+*Footer-Player* (seit 21.11.2026, `Fuss.astro`)
+- Eine Karte auf `--flaeche` (`--r-gross`, Padding 12 px), höchstens 420 px breit, wie ein kleiner Musikplayer: links die Platte als `<button data-platte>` (64 px), daneben Songtitel (600) und Interpret (`--leise`), rechts zwei runde Icon-Knöpfe (44 px, auf `--grund`): Play/Pause (`data-platte`, das Icon wechselt über `data-laeuft`) und der Schalter der fliegenden Platte (Platten-Icon, `role="switch"`, gefüllt in `--text`, solange sie fliegt).
+- Läuft Musik, tanzen neben dem Titel drei kleine orange Balken (Equalizer, nicht bei Reduced Motion). Neuer erlaubter Einsatz von Orange.
+- Die Platte: eine Scheibe mit Rillen (`repeating-radial-gradient`), das Etikett (Johannes' Gesicht, 50 %, rund) und eine orange Spindel. Darüber liegt ein statischer Glanz (`conic-gradient`), der sich nicht mitdreht. Die `aria-label` („Song abspielen“ bzw. „Song anhalten“) setzt das Skript.
 
 *Fliegende Platte (Easter Egg)*
 - Dieselbe Platte in klein: 64 px, am Handy 52 px, Spindel 6 px. `position: fixed`, weicher Schatten `0 10px 28px rgba(0,0,0,.28)`, `z-index` unter dem Handymenü, beim Drucken ausgeblendet.
 - Sie fliegt schräg mit 70 bis 140 px/s über den Bildschirm und prallt an den Rändern ab wie ein Pingpongball.
 - Antippen schaltet um wie bei der Footer-Platte: Läuft die Musik, halten Musik und Platte an, und die Platte bleibt an ihrer Stelle stehen. Läuft sie nicht, startet der Tipp die Musik, und beide Platten drehen sich.
 - Sie sitzt im Basis-Layout, also auf jeder Seite, direkt nach dem Skip-Link. So erreicht man sie per Tastatur sofort.
-- Abschaltbar mit `plattenteller.fliegende_platte: false`, auch in Pages CMS. Dann gibt es auch kein Autoplay, die Musik startet nur über die Footer-Platte.
+- Abschaltbar mit `plattenteller.fliegende_platte: false`, auch in Pages CMS. Dann startet die Musik nur über den Player im Footer.
 
 *Verhalten*
-- Beim Laden versucht die Seite, die Musik zu starten. Browser erlauben Ton meist erst nach der ersten Berührung. Dann startet sie beim ersten Tippen, Klicken oder Tastendruck irgendwo auf der Seite und blendet in 0,8 s auf 60 % Lautstärke ein. Wischen zum Scrollen startet nichts.
+- Die Musik startet nur über die Platten und den Player (Johannes, 22.11.2026: „einzig und allein durch die Schallplatte und das Modul unten“). Es gibt kein Autoplay, und ein Tippen irgendwo sonst (Karte, Filter, Menü, Text) startet nichts. Beim Start blendet sie in 0,8 s auf 60 % Lautstärke ein.
+- Die fliegende Platte fliegt trotzdem von Anfang an, als Einladung zum Antippen.
 - Footer-Platte und fliegende Platte steuern dieselbe Musik.
+- Achtung beim Bauen: `data-platte` heißt „dieses Element ist ein Play-Knopf“. Den Seitenmodus der fliegenden Platte trägt `<body data-flieger-modus>`; ein `data-platte` am `<body>` machte die ganze Seite zum Play-Knopf (so geschehen bis 22.11.2026 auf der Brixmap).
 - Beide Scheiben drehen sich nur, solange Musik läuft, mit 1,8 s pro Umdrehung. Anhalten friert Drehwinkel und Song-Position ein, Weiterspielen macht genau dort weiter.
 - Beim Seitenwechsel läuft alles weiter. Dafür sorgen `<ClientRouter />` im Layout und `transition:persist="musik"` um Audio und fliegende Platte.
 - Der Browser merkt sich „angehalten“ und die Position der Platte (localStorage). Wer sie anhält, wird beim nächsten Besuch nicht wieder überrascht. Song-Position und Winkel gelten für die Sitzung (sessionStorage).
@@ -221,8 +217,8 @@ So sieht das im Basis-Layout aus:
 ```
 
 **Footer**
-- Grid: Plattenteller | Links rechtsbündig (Familjen Grotesk 600, 19 px): Instagram, Strava, Blog auf Substack, Lebenslauf auf LinkedIn.
-- Darunter klein: Impressum, Datenschutz, © Jahr Johannes Brix.
+- Grid: Player | Plattformen rechtsbündig als runde Icon-Knöpfe (44 px, `--flaeche`, Markenlogos von Simple Icons, LinkedIn als eigener Pfad). Name als `aria-label` und `title` („Instagram“, „Strava“, „Blog auf Substack“, „Lebenslauf auf LinkedIn“).
+- Darunter klein: © Jahr Johannes Brix, Impressum, Datenschutz.
 - Leere Links lässt du weg. Am Handy steht alles untereinander.
 
 **Bereichsseite** (siehe `bereich.html`)
@@ -240,15 +236,14 @@ So sieht das im Basis-Layout aus:
    - Tags (`--leise`)
 
    Sortiert wird nach letzter Aktivität.
-4. Nur auf `/menschen/`: danach „Momente“ als Liste mit Titel, Datum und dem ersten Satz.
-5. Leerer Zustand: „Noch keine Beiträge.“
+4. Leerer Zustand: „Noch keine Beiträge.“
 
 **Beitragsseite** (siehe `beitrag.html`; Johannes: „Das Template sieht top aus!“)
 1. Zurück-Link mit dem Bereichsnamen (15/500, `--leise`).
 2. Titel (700, riesig).
 3. Tags.
-4. Fakten als `<dl>`: Status, Zeitraum, Bereich (Label 13 px `--leise`, Wert 16/600). Fehlende Werte lässt du weg.
-5. Titelbild 3:2 (`--r-gross`) mit optionaler Bildunterschrift (14 px `--leise`).
+4. Fakten als `<dl>`: Status, Datum, Auf der Brixmap (Label 13 px `--leise`, Wert 16/600). Fehlende Werte lässt du weg. Seit 22.11.2026 ohne „Zeitraum“ (das Datum zählt) und ohne „Bereich“ (steht schon im Zurück-Link und im Icon).
+5. Titelbild seit 22.11.2026 als **Cover** ganz oben wie bei Notion (`Cover.astro`): am Handy randlos, ab 761 px im Rahmen mit `--r-gross`, 200 bis 380 px hoch, `object-fit: cover`, optionale Bildunterschrift klein rechts darunter. Darunter das **Seiten-Icon** (64 px, Radius 20 px, `--flaeche`, Icon des Bereichs), das mit 4 px Rand in `--grund` in das Cover hineinragt; ohne Cover steht es einfach über dem Titel. Der **Titel** passt sich an: Sein längstes Wort bestimmt, wie groß er höchstens wird (`--laengstes`), damit z. B. „builder.community“ am Handy nicht abgeschnitten wird.
 6. Story in Literata 18 bis 20 px, höchstens 680 px breit.
 7. „Updates“, das Neueste zuerst: Datum 14/600 (das neueste mit orangem Punkt), darunter der Text in Literata 18 px, optional mit Bild (`--r`).
 8. „Bilder“ als Galerie: 3 Spalten, quadratisch, `--r-klein`, Abstand 8 bis 14 px. Ein Klick öffnet das Bild groß in einem `<dialog>` mit Escape und Schließen-Button.
@@ -257,9 +252,7 @@ So sieht das im Basis-Layout aus:
 
 Leere Abschnitte erscheinen gar nicht, auch nicht ihre Überschrift.
 
-**Momente**
-- Übersicht: Liste mit Titel (600, 26 px), Datum und dem ersten Satz in Literata.
-- Einzelseite: wie die Beitragsseite, aber ohne Fakten, Updates und Galerie.
+**Momente:** gibt es seit 22.11.2026 nicht mehr (Johannes). Geschichten mit Menschen werden Beiträge im Bereich Menschen & Community.
 
 **Rise & Shine** (Seite)
 - Oben das Band wie auf der Startseite, mit Text und Klick-Knopf.
@@ -294,23 +287,29 @@ Leere Abschnitte erscheinen gar nicht, auch nicht ihre Überschrift.
 
 Ziel: Wer die Seite besucht, soll sich danach besser fühlen. Jedes Element gibt dem Leser etwas.
 
-- **Navigation:** drei Türen, Projekte · Rise & Shine · Brixmap. Unter 760 px wie bisher das Handymenü, jetzt mit Impressum und Datenschutz am Ende.
-- **Chips** (`.chip` in `global.css`): Pillen mit feiner Linie, aktiv gefüllt in `--text`. Für Filter (Projekte, Brixmap) und die Sprungleiste auf Rise & Shine.
-- **Pill-Knöpfe** (`.pill`): `--text` als Fläche, `.pill.leise` auf `--flaeche`. Der einzige orange Knopf bleibt der Klick-Knopf.
+- **Navigation:** drei Türen: Projekte, Rise & Shine, Brixmap. Unter 760 px das Handymenü mit Icons (siehe Kopfzeile).
+- **Icons** (`src/lib/icons.ts`, `<Icon>`): Lucide-Linien mit 1,8 px Strich, Größe folgt der Schrift. Sie ersetzen erklärenden Text, wo das klar genug ist (Menü, Schließen, Player, Plattformen), und begleiten Chips und Knöpfe. Runde Icon-Knöpfe (`.icon-knopf`): 44 px, `--flaeche`, Hover gefüllt in `--text`. Ohne Foto zeigen Kacheln und Listen das Icon ihres Bereichs auf `--flaeche` (`.bild-leer`).
+- **Türen auf der Startseite:** unter dem Intro die drei Türen; am Desktop als Chips, am Handy als drei gleich große Kacheln (`--flaeche`, `--r`, Icon oben, Name unten).
+- **Startseite, Reihenfolge (22.11.2026):** Intro mit Türen, „Gerade dran“, Rise-and-Shine-Band, Brixmap-Karte, Footer. Die Bereichs-Kacheln gibt es auf der Startseite nicht mehr; die Bereiche erreicht man über „Projekte“ und die Filter-Chips dort.
+- **Chips** (`.chip` in `global.css`): Pillen mit feiner Linie und Icon, aktiv gefüllt in `--text`. Für Filter (Projekte, Brixmap) und die Sprungleiste auf Rise & Shine. Am Handy eine wischbare Reihe statt Umbruch.
+- **Pill-Knöpfe** (`.pill`): `--text` als Fläche, `.pill.leise` auf `--flaeche`, gern mit Icon. Der einzige orange Knopf bleibt der Klick-Knopf.
 - **Projekte:** Chips oben, dann der große Titel, dann das Kartenraster. Unter „Alle“ steht der Bereich in der Meta-Zeile der Karte. Die Bereichsseiten sind die gefilterten Ansichten.
 - **Zum Mitnehmen** (Beitragsseite, unter der Story): Fläche `--flaeche`, `--r`, Titel 14/600 mit orangem Punkt (8 px), Text in Literata 19–22 px. Neuer erlaubter Einsatz von Orange: dieser Punkt.
-- **Rise & Shine:** Band, Sprungleiste, „Warum Rise and Shine“ (Geschichte links, Video rechts, am Handy untereinander), Zitate, Videos, Bücher.
-- **Video** (`Video.astro`): 16:9, Fläche `#1b1b1a`, Titel unten links, weißer Play-Kreis in der Mitte, Hinweis „Beim Abspielen lädt das Video von YouTube.“ Kein Vorschaubild von YouTube. Darunter Kanal, „Auf YouTube ansehen“, „Datenschutz“.
-- **Zitatfeld unter dem Klick-Knopf:** fester Platz in der Höhe des längsten Zitats, damit nichts springt. Neues Zitat blendet in 0,35 s ein (nicht bei Reduced Motion).
-- **Brixmap:** Karte fast bildschirmhoch und randlos, Kacheln entsättigt (im Dunkelmodus invertiert), Pins als Emoji in weißem Kreis mit feiner Linie. Popups ohne Schatten, mit Linie. Ausnahme von „keine Emojis“: die Pins ☀️ 💌 ✅ und ihre Chips.
-- **Fliegende Platte:** Steht sie, erscheint daneben die Pille „Ausblenden“. Im Footer unter dem Plattenteller der Schalter „Fliegende Platte ausblenden / zeigen“. Auf der Brixmap parkt sie unten rechts.
+- **Rise & Shine (22.11.2026):** Band, „Warum Rise and Shine“ (Geschichte links, Video rechts, am Handy untereinander), dann je ein **Regal** (`Regal.astro`) für Zitate, Videos, Reden und Bücher. Ein Regal ist eine waagerecht wischbare Reihe mit Einrasten, die bis an den Bildschirmrand läuft; jede Reihe bleibt gleich hoch, egal wie viele Einträge es gibt, deshalb braucht die Seite keine Sprungleiste (Johannes: „nicht alles über Filter laufen lassen“). Kopf: Titel mit Anzahl-Plakette; mit Maus zwei runde Blätter-Knöpfe (Chevron-Icons, ausgegraut am Anfang/Ende, weg ohne Überlauf), am Handy wischt man.
+  - Zitat-Karten: `--flaeche`, `--r-gross`, oranges Anführungszeichen-Icon, Zitat in Literata 20 bis 23 px, Quelle unten.
+  - Video- und Reden-Karten: dunkle Fläche 16:10 wie das große Video (Play- bzw. Mikrofon-Kreis oben, Titel weiß 600 unten, höchstens drei Zeilen), darunter Kanal mit Extern-Icon. Kein Vorschaubild von YouTube.
+  - Bücher: typografische Cover 2:3 (Titel in Literata, Autor klein, abwechselnd Anthrazit und Papier `#ece8e1`, feine Falz links), 150 px breit.
+- **Video** (`Video.astro`): 16:9, Fläche `#1b1b1a`, Titel unten links, weißer Play-Kreis mittig im freien Raum darüber (überdeckt den Titel nie), Hinweis „Beim Abspielen lädt das Video von YouTube.“ Kein Vorschaubild von YouTube. Darunter Kanal, „Auf YouTube ansehen“, „Datenschutz“.
+- **Brixmap:** wie eine Karten-App, Details in `docs/brixmap.md`. Pins: Kreise von 30 px mit 2 px weißem Rand und Lucide-Icon (Orange/Sonne: Johannes, Anthrazit/Rakete: Empfehlung; „besucht“ gibt es seit 22.11.2026 nicht mehr), auf der Karte 44 px Tippfläche, gewählt 1,3-fach mit orangem Hof. Kacheln entsättigt (im Dunkelmodus invertiert). Was über der Karte schwebt (Chips, Knöpfe, Ortskarte, Suche), steht auf `--grund` mit Haarlinie und weichem Schatten. Formular als Sheet: am Handy von unten mit runden oberen Ecken, sonst mittig.
+- **Fliegende Platte:** aus- und einblenden nur über den Platten-Knopf im Footer-Player (keine Pille neben der Platte, kein Schalter im Menü). Auf der Brixmap fliegt sie nicht.
+- **Ortskarte der Brixmap (22.11.2026):** kompakt. Kopfzeile mit Pin und Art, rechts Route und Schließen als runde Icon-Knöpfe; Name 22 bis 28 px; Notiz höchstens drei Zeilen, der Rest nach „Mehr anzeigen“ (unterstrichen, orange Linie). Auf Johannes' freigeschaltetem Gerät darunter, durch eine Linie getrennt, „Löschen“ (der erste Tipp fragt „Wirklich löschen?“, gefüllt in `--text`); beim Setzen ist der Pin in der Kartenmitte dort die Sonne statt der Rakete.
 
 ## Nicht tun
 
-- keine Emojis, Icon-Sammlungen oder Pfeile
+- keine Emojis und keine Pfeile (→) an Links oder Buttons. Icons nur aus `src/lib/icons.ts`. Einzige Pfeil-Ausnahme: die Chevron-Knöpfe zum Blättern in den Regalen.
 - keine Großbuchstaben-Labels
-- keine Mittelpunkte als Trenner
-- keine Schatten, keine Verläufe als Deko, kein Glassmorphism. Einzige Ausnahme ist der Schatten der fliegenden Platte, damit sie sichtbar über dem Inhalt schwebt.
+- keine Mittelpunkte als Trenner (Abstand statt Trennzeichen, wie in der Projektliste)
+- keine Schatten, keine Verläufe als Deko, kein Glassmorphism. Ausnahmen: der Schatten der fliegenden Platte und weiche Schatten für alles, was über der Brixmap-Karte schwebt (Chips, Knöpfe, Ortskarte, Pins, Sheet). Beide trennen Bedienelemente von dem, was darunter liegt; Deko sind sie nicht.
 - keine Scroll-Animationen, keine Fade-ins pro Abschnitt
 - kein Orange als Fläche außer dem Klick-Knopf, kein oranger Fließtext
 - keine Stock- oder KI-Bilder

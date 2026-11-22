@@ -1,6 +1,9 @@
 ---
-// Rise-and-Shine-Band (invertiert) mit Motto, Text, Klick-Knopf, Zähler und Zitat.
+// Rise-and-Shine-Band (invertiert): Motto, Text, eine Zitatkarte und der Klick-Knopf mit Zähler.
+// Die Karte zeigt immer ein Zitat; jeder Klick blendet zum nächsten über. Alle Zitate liegen im
+// selben Rasterfeld übereinander, deshalb ist die Karte so hoch wie das längste und nichts springt.
 // Auf der Startseite als h2, auf /rise-and-shine/ als h1 ganz oben.
+import Icon from './Icon.astro';
 import { einstellungen, zitate } from '../lib/inhalt';
 import { API } from '../lib/dienste';
 
@@ -13,7 +16,7 @@ interface Props {
 const { ebene = 'h2', oben = false } = Astro.props;
 const Titel = ebene;
 const site = await einstellungen();
-const liste = (await zitate()).map(({ text, von }) => ({ text, von }));
+const liste = await zitate();
 ---
 
 <section class:list={['band', { oben }]} aria-labelledby="rise-titel">
@@ -21,28 +24,29 @@ const liste = (await zitate()).map(({ text, von }) => ({ text, von }));
     <Titel class="rise-titel" id="rise-titel">{site.motto ?? 'Rise and Shine'}<span class="punkt" aria-hidden="true"></span></Titel>
     {site.motto_text && <p class="rise-text">{site.motto_text}</p>}
     {
-      site.klick.knopf && (
-        <div data-klick data-zitate={JSON.stringify(liste)} data-api={API || undefined}>
-          <div class="klick">
-            <button class="knopf" type="button" data-klick-knopf>{site.klick.knopf}</button>
-            <p class="zaehler" aria-live="polite">
-              <span data-klick-zahl>0</span>×{site.klick.zaehler && ` ${site.klick.zaehler}`}
-            </p>
+      liste.length > 0 && (
+        <div class="zitat-karte">
+          <Icon name="zitat" class="zitat-zeichen" />
+          <div class="zitat-stapel" aria-live="polite">
+            {liste.map((zitat, i) => (
+              <figure class:list={['zitat', { aktiv: i === 0 }]} data-zitat>
+                <blockquote class="zitat-text">„{zitat.text}“</blockquote>
+                {zitat.von && <figcaption class="zitat-quelle">{zitat.von}</figcaption>}
+              </figure>
+            ))}
           </div>
-          {liste.length > 0 && (
-            <div class="zitat-rahmen">
-              {/* Alle Zitate unsichtbar übereinander: Der Rahmen ist so hoch wie das längste, nichts springt. */}
-              <div class="zitat-mass" aria-hidden="true">
-                {liste.map((zitat) => (
-                  <figure class="zitat">
-                    <blockquote class="zitat-text">„{zitat.text}“</blockquote>
-                    {zitat.von && <figcaption class="zitat-quelle">{zitat.von}</figcaption>}
-                  </figure>
-                ))}
-              </div>
-              <div class="zitat-ort" aria-live="polite" data-klick-zitat />
-            </div>
-          )}
+        </div>
+      )
+    }
+    {
+      site.klick.knopf && (
+        <div class="klick" data-klick data-api={API || undefined}>
+          <button class="knopf" type="button" data-klick-knopf>
+            {site.klick.knopf}
+          </button>
+          <p class="zaehler" aria-live="polite">
+            <span data-klick-zahl>0</span>×{site.klick.zaehler && ` ${site.klick.zaehler}`}
+          </p>
         </div>
       )
     }
@@ -59,7 +63,7 @@ const liste = (await zitate()).map(({ text, von }) => ({ text, von }));
     margin-top: 0;
   }
   .band .rahmen {
-    padding-block: clamp(64px, 9cqi, 128px);
+    padding-block: clamp(56px, 8cqi, 120px);
   }
   .rise-titel {
     font-weight: 700;
@@ -75,12 +79,62 @@ const liste = (await zitate()).map(({ text, von }) => ({ text, von }));
     line-height: 1.55;
     opacity: 0.88;
   }
+
+  /* Zitatkarte: immer gefüllt, so hoch wie das längste Zitat */
+  .zitat-karte {
+    display: grid;
+    gap: 14px;
+    max-width: 640px;
+    margin-top: clamp(28px, 3.6cqi, 44px);
+    padding: clamp(20px, 2.8cqi, 32px);
+    border-radius: var(--r-gross);
+    background: color-mix(in srgb, var(--grund) 8%, transparent);
+  }
+  .zitat-karte :global(.zitat-zeichen) {
+    width: 26px;
+    height: 26px;
+    color: var(--orange);
+  }
+  .zitat-stapel {
+    display: grid;
+  }
+  /* Kürzere Zitate stehen mittig, damit der freie Platz nicht nur unten liegt */
+  .zitat {
+    grid-area: 1 / 1;
+    align-self: center;
+    margin: 0;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 0.35s ease,
+      visibility 0s linear 0.35s;
+  }
+  .zitat.aktiv {
+    opacity: 1;
+    visibility: visible;
+    transition:
+      opacity 0.45s ease 0.1s,
+      visibility 0s;
+  }
+  .zitat-text {
+    font-family: var(--lese);
+    font-size: clamp(21px, 2.2cqi, 28px);
+    line-height: 1.38;
+    text-wrap: balance;
+  }
+  .zitat-quelle {
+    margin-top: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 0.8; /* bei 0,7 im Dunkelmodus nur 4,25:1 Kontrast */
+  }
+
   .klick {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 14px 24px;
-    margin-top: clamp(30px, 3.6cqi, 48px);
+    margin-top: clamp(24px, 3cqi, 36px);
   }
   .knopf {
     display: inline-flex;
@@ -96,6 +150,9 @@ const liste = (await zitate()).map(({ text, von }) => ({ text, von }));
     letter-spacing: -0.01em;
     text-align: left;
     cursor: pointer;
+    transition:
+      filter 0.15s,
+      transform 0.1s;
   }
   .knopf:hover {
     filter: brightness(1.07);
@@ -109,69 +166,35 @@ const liste = (await zitate()).map(({ text, von }) => ({ text, von }));
     opacity: 0.88;
     font-variant-numeric: tabular-nums;
   }
-  /* Fester Platz für das Zitat: so hoch wie das längste Zitat, damit beim Klicken nichts springt */
-  .zitat-rahmen {
-    display: grid;
-    margin-top: clamp(26px, 3cqi, 40px);
-    max-width: 34em;
-  }
-  .zitat-mass,
-  .zitat-ort {
-    grid-area: 1 / 1;
-  }
-  .zitat-mass {
-    display: grid;
-    visibility: hidden;
-  }
-  /* Ausmessen in der aufrechten Literata, die ohnehin geladen ist: Sie läuft etwas breiter als die
-     kursive, der Platz reicht also. Die kursive Schrift lädt erst beim ersten Zitat. */
-  .band .zitat-mass :global(.zitat-text) {
-    font-style: normal;
-  }
-  .zitat-mass > .zitat {
-    grid-area: 1 / 1;
-  }
-  /* Das angezeigte Zitat setzt das Skript ein, deshalb :global */
-  .zitat-ort :global(.zitat) {
-    animation: zitat-ein 0.35s ease both;
-  }
-  @keyframes zitat-ein {
-    from {
-      opacity: 0;
-    }
-  }
   @media (prefers-reduced-motion: reduce) {
-    .zitat-ort :global(.zitat) {
-      animation: none;
+    .zitat,
+    .zitat.aktiv {
+      transition: none;
     }
-  }
-  .band :global(.zitat-text) {
-    font-family: var(--lese);
-    font-style: italic;
-    font-size: clamp(20px, 2cqi, 26px);
-    line-height: 1.4;
-    text-wrap: balance;
-  }
-  .band :global(.zitat-quelle) {
-    margin-top: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    opacity: 0.75;
   }
 </style>
 
 <script>
   // Klick-Zähler: Mit Server (data-api) zählt er alle Klicks aller Besucher. Der Knopf reagiert sofort,
   // die Klicks gehen gebündelt an den Server, der Auto-Klicker begrenzt (api/src/index.js).
-  // Ohne Server zählt er nur die Klicks dieses Besuchers.
-  // Die eigenen Klicks (localStorage, mit try/catch) bestimmen das Zitat: jeder Klick zeigt das nächste
-  // aus zitate.yml, der Reihe nach; vor dem ersten Klick keins.
-  type Zitat = { text: string; von?: string };
+  // Ohne Server zählt er nur die Klicks dieses Besuchers (localStorage, mit try/catch).
+  // Jeder Klick blendet in der Zitatkarte zum nächsten Zitat über, nach dem letzten wieder von vorn.
   type Zaehler = { api: string; server: number | null; offen: number; unterwegs: boolean; timer: number };
   const SCHLUESSEL = 'klicks';
   const BUENDEL_MS = 700;
   const HOECHSTENS = 10; // Klicks pro Anfrage, so viele nimmt der Server auf einmal an
   const w = window as Window & { __jbKlick?: boolean; __jbKlicks?: number; __jbZaehler?: Zaehler };
+
+  function stand(): number {
+    if (w.__jbKlicks === undefined) {
+      try {
+        w.__jbKlicks = parseInt(localStorage.getItem(SCHLUESSEL) || '0', 10) || 0;
+      } catch {
+        w.__jbKlicks = 0;
+      }
+    }
+    return w.__jbKlicks;
+  }
 
   function zaehler(api: string): Zaehler {
     if (!w.__jbZaehler || w.__jbZaehler.api !== api) {
@@ -218,31 +241,12 @@ const liste = (await zitate()).map(({ text, von }) => ({ text, von }));
     if (!z.timer) z.timer = window.setTimeout(() => senden(z), BUENDEL_MS);
   }
 
-  function stand(): number {
-    if (w.__jbKlicks === undefined) {
-      try {
-        w.__jbKlicks = parseInt(localStorage.getItem(SCHLUESSEL) || '0', 10) || 0;
-      } catch {
-        w.__jbKlicks = 0;
-      }
-    }
-    return w.__jbKlicks;
-  }
-
-  function zitatZeigen(ort: Element, zitat: Zitat) {
-    const figur = document.createElement('figure');
-    figur.className = 'zitat';
-    const text = document.createElement('blockquote');
-    text.className = 'zitat-text';
-    text.textContent = `„${zitat.text}“`;
-    figur.append(text);
-    if (zitat.von) {
-      const von = document.createElement('figcaption');
-      von.className = 'zitat-quelle';
-      von.textContent = zitat.von;
-      figur.append(von);
-    }
-    ort.replaceChildren(figur);
+  function naechstesZitat(band: Element | null) {
+    const alle = band ? [...band.querySelectorAll('[data-zitat]')] : [];
+    if (alle.length < 2) return;
+    const jetzt = Math.max(0, alle.findIndex((el) => el.classList.contains('aktiv')));
+    alle[jetzt].classList.remove('aktiv');
+    alle[(jetzt + 1) % alle.length].classList.add('aktiv');
   }
 
   function klickEinrichten() {
@@ -250,26 +254,22 @@ const liste = (await zitate()).map(({ text, von }) => ({ text, von }));
       if (box.dataset.bereit !== undefined) continue;
       box.dataset.bereit = '';
       const knopf = box.querySelector('[data-klick-knopf]');
-      const zahl = box.querySelector('[data-klick-zahl]');
-      const ort = box.querySelector('[data-klick-zitat]');
-      const zitate: Zitat[] = JSON.parse(box.dataset.zitate || '[]');
+      if (!knopf) continue;
       const api = box.dataset.api || '';
-      if (!knopf || !zahl || !ort) continue;
       const z = api ? zaehler(api) : null;
       anzeigen();
       if (z) laden(z);
       knopf.addEventListener('click', () => {
-        const n = stand() + 1;
-        w.__jbKlicks = n;
+        w.__jbKlicks = stand() + 1;
         try {
-          localStorage.setItem(SCHLUESSEL, String(n));
+          localStorage.setItem(SCHLUESSEL, String(w.__jbKlicks));
         } catch {}
         if (z) {
           z.offen++;
           planen(z);
         }
         anzeigen();
-        if (zitate.length) zitatZeigen(ort, zitate[(n - 1) % zitate.length]);
+        naechstesZitat(box.closest('.band'));
       });
     }
   }

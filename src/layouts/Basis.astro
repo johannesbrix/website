@@ -21,12 +21,12 @@ interface Props {
   noindex?: boolean;
   /** Abstand zwischen Inhalt und Footer (entfällt z. B. auf der Startseite, die mit dem Band endet) */
   abstand?: boolean;
-  /** Die fliegende Platte parkt unten rechts, statt über die Seite zu fliegen (z. B. über der Karte) */
-  platteParken?: boolean;
+  /** Fliegende Platte auf dieser Seite: „parken“ (unten rechts) oder „weg“ (nicht zu sehen, z. B. über der Karte) */
+  platte?: 'parken' | 'weg';
 }
 
 const site = await einstellungen();
-const { titel, beschreibung, bild, typ = 'website', noindex = false, abstand = true, platteParken = false } = Astro.props;
+const { titel, beschreibung, bild, typ = 'website', noindex = false, abstand = true, platte } = Astro.props;
 
 const volltitel = titel ? `${titel} – ${site.name}` : site.name;
 const text = beschreibung || site.beschreibung || '';
@@ -66,7 +66,7 @@ const teilen = bild ?? { src: '/og.jpg', width: 1200, height: 630 };
 
     <ClientRouter />
   </head>
-  <body data-platte-parken={platteParken ? '' : undefined}>
+  <body data-flieger-modus={platte}>
     <a class="skip" href="#inhalt">Zum Inhalt springen</a>
     <Musik song={site.plattenteller} />
     <div class="seite">

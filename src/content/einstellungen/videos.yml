@@ -1,8 +1,40 @@
 # Videos für die Seite „Rise and Shine“, auch in Pages CMS unter „Videos“ bearbeitbar.
-# Abgespielt wird erst nach einem Klick (Zwei-Klick-Lösung), vorher lädt nichts von YouTube.
-# geschichte: true = das Video steht direkt unter deiner Geschichte (nur bei einem Video setzen).
+# geschichte: true = läuft direkt neben deiner Geschichte (nur bei einem Video, mit Zwei-Klick-Lösung).
+# Alle anderen erscheinen als Links zu YouTube.
+# art: motivation (Abschnitt „Videos“) oder rede (Abschnitt „Reden“)
 - titel: "Rise and shine - Athlete and Running ultimate motivation"
   link: https://www.youtube.com/watch?v=SuPLxQD4akQ
   von: "Even Ødegård"
   warum: ""
+  art: motivation
   geschichte: true
+- titel: "Why Do We Fall - Motivational Video"
+  link: https://www.youtube.com/watch?v=mgmVOuLgFB0
+  von: "Mateusz M"
+  warum: ""
+  art: motivation
+- titel: "Dream - Motivational Video"
+  link: https://www.youtube.com/watch?v=g-jwWYX7Jlo
+  von: "Mateusz M"
+  warum: ""
+  art: motivation
+- titel: "Unbroken - Motivational Video"
+  link: https://www.youtube.com/watch?v=26U_seo0a1g
+  von: "Mateusz M"
+  warum: ""
+  art: motivation
+- titel: "Charlie Munger Commencement Address - USC"
+  link: https://www.youtube.com/watch?v=5U0TE4oqj24
+  von: "Value Investor's Club"
+  warum: ""
+  art: rede
+- titel: "Admiral McRaven addresses the University of Texas at Austin Class of 2014"
+  link: https://www.youtube.com/watch?v=yaQZFhrW0fU
+  von: "The University of Texas at Austin"
+  warum: ""
+  art: rede
+- titel: "Steve Jobs' 2005 Stanford Commencement Address"
+  link: https://www.youtube.com/watch?v=UF8uR6Z6KLc&t=84s
+  von: "Stanford"
+  warum: ""
+  art: rede

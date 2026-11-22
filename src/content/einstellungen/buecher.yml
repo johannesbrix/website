@@ -1,7 +1,18 @@
 # Bücher für die Seite „Rise and Shine“, auch in Pages CMS unter „Bücher“ bearbeitbar.
-# Felder: titel, autor, mitgenommen (1–2 Sätze), foto (am besten ein eigenes Foto deines Exemplars), foto_alt, link
-# Beispiel:
-# - titel: "Titel des Buchs"
-#   autor: "Name"
-#   mitgenommen: "Was ich mitgenommen habe."
-[]
+# Felder: titel, autor, mitgenommen (1–2 Sätze, erscheint unter dem Buch), foto (am besten ein eigenes
+# Foto deines Exemplars; ohne Foto zeigt die Seite ein schlichtes Cover mit Titel und Autor), foto_alt, link
+- titel: "Sorge dich nicht – lebe!"
+  autor: "Dale Carnegie"
+  mitgenommen: ""
+- titel: "Der kleine Prinz"
+  autor: "Antoine de Saint-Exupéry"
+  mitgenommen: ""
+- titel: "Unbroken"
+  autor: "Laura Hillenbrand"
+  mitgenommen: ""
+- titel: "Seabiscuit"
+  autor: "Laura Hillenbrand"
+  mitgenommen: ""
+- titel: "Poor Charlie’s Almanack"
+  autor: "Charlie Munger"
+  mitgenommen: ""

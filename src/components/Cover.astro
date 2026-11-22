@@ -1,0 +1,50 @@
+---
+// Titelbild als Cover oben auf Beitrags- und Momentseiten, wie bei Notion (Johannes, 22.11.2026):
+// am Handy randlos, ab 761 px im Rahmen mit runden Ecken. Darunter ragt das Icon der Seite in den
+// unteren Rand (.seiten-icon.auf-cover in global.css). Dasselbe Bild zeigen die Projektlisten.
+import Foto from './Foto.astro';
+
+interface Props {
+  bild: ImageMetadata;
+  alt?: string;
+  unterschrift?: string;
+}
+
+const { bild, alt, unterschrift } = Astro.props;
+---
+
+<figure class="cover">
+  <Foto bild={bild} alt={alt} breiten={[800, 1200, 1600, 2400]} sizes="(max-width: 760px) 100vw, min(92vw, 1280px)" sofort class="cover-bild" />
+  {unterschrift && <figcaption class="cover-text">{unterschrift}</figcaption>}
+</figure>
+
+<style>
+  .cover {
+    margin: 0;
+  }
+  .cover :global(.cover-bild) {
+    width: 100%;
+    height: clamp(200px, 30vw, 380px);
+    object-fit: cover;
+    border-radius: 0;
+  }
+  .cover-text {
+    padding: 8px clamp(20px, 4.4cqi, 64px) 0;
+    font-size: 13px;
+    color: var(--leise);
+    text-align: right;
+  }
+  @container (min-width: 761px) {
+    .cover {
+      max-width: 1280px;
+      margin-inline: auto;
+      padding: clamp(8px, 1.6cqi, 20px) clamp(20px, 4.4cqi, 64px) 0;
+    }
+    .cover :global(.cover-bild) {
+      border-radius: var(--r-gross);
+    }
+    .cover-text {
+      padding-inline: 0;
+    }
+  }
+</style>

@@ -1,13 +1,12 @@
 ---
 // Bereichsseite = Projekte, gefiltert nach einem Bereich: Chips, Titel, Untertitel, Intro und Foto,
-// dann alle Beiträge des Bereichs als Kartenraster nach letzter Aktivität. Auf /menschen/ zusätzlich die Momente.
+// dann alle Beiträge des Bereichs als Kartenraster nach letzter Aktivität.
 import { render } from 'astro:content';
 import Basis from '../../layouts/Basis.astro';
 import Foto from '../../components/Foto.astro';
 import Bereichsfilter from '../../components/Bereichsfilter.astro';
 import Beitragsraster from '../../components/Beitragsraster.astro';
-import MomenteListe from '../../components/MomenteListe.astro';
-import { beitraege, bereiche, klartext, kurz, momente, teilbild, type Bereich } from '../../lib/inhalt';
+import { BEREICH_ICONS, beitraege, bereiche, klartext, kurz, teilbild, type Bereich } from '../../lib/inhalt';
 
 export async function getStaticPaths() {
   return (await bereiche()).map((bereich) => ({ params: { bereich: bereich.id }, props: { bereich } }));
@@ -21,7 +20,6 @@ const { bereich } = Astro.props;
 const { titel, untertitel, bild, bild_alt } = bereich.data;
 const { Content } = await render(bereich);
 const eintraege = (await beitraege()).filter((b) => b.data.bereich === bereich.id);
-const geschichten = bereich.id === 'menschen' ? await momente() : [];
 
 const intro = klartext(bereich.body);
 const beschreibung = kurz(intro && !intro.startsWith('[') ? intro : (untertitel ?? ''));
@@ -42,7 +40,7 @@ const beschreibung = kurz(intro && !intro.startsWith('[') ? intro : (untertitel 
       }
     </div>
     <figure class="bereich-bild">
-      <Foto bild={bild} alt={bild_alt} breiten={[800, 1200, 1600]} sizes="(max-width: 760px) 100vw, 45vw" sofort />
+      <Foto bild={bild} alt={bild_alt} icon={BEREICH_ICONS[bereich.id]} breiten={[800, 1200, 1600]} sizes="(max-width: 760px) 100vw, 45vw" sofort />
     </figure>
   </section>
 
@@ -50,15 +48,6 @@ const beschreibung = kurz(intro && !intro.startsWith('[') ? intro : (untertitel 
     <h2 class="titel" id="beitraege">Beiträge</h2>
     {eintraege.length > 0 ? <Beitragsraster beitraege={eintraege} /> : <p class="leer">Noch keine Beiträge.</p>}
   </section>
-
-  {
-    geschichten.length > 0 && (
-      <section class="abschnitt rahmen" aria-labelledby="momente">
-        <h2 class="titel" id="momente">Momente</h2>
-        <MomenteListe momente={geschichten} />
-      </section>
-    )
-  }
 </Basis>
 
 <style>

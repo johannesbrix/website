@@ -26,11 +26,6 @@ const { song } = Astro.props;
           <span class="glanz" />
         </button>
       )}
-      {song.fliegende_platte && (
-        <button class="flieger-weg" type="button" data-flieger-weg hidden>
-          Ausblenden
-        </button>
-      )}
     </div>
   )
 }
@@ -68,25 +63,6 @@ const { song } = Astro.props;
     height: 6px;
     margin: -3px 0 0 -3px;
   }
-  /* Erscheint neben der angehaltenen Platte; musik.js setzt die Position */
-  .flieger-weg {
-    position: fixed;
-    left: 0;
-    top: 0;
-    z-index: 50;
-    min-height: 40px;
-    padding: 0 16px;
-    border: 0;
-    border-radius: 999px;
-    background: var(--text);
-    color: var(--grund);
-    font: 600 14px var(--grotesk);
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .flieger-weg[hidden] {
-    display: none;
-  }
   @media (max-width: 760px) {
     .flieger {
       width: 52px;
@@ -94,8 +70,7 @@ const { song } = Astro.props;
     }
   }
   @media print {
-    .flieger,
-    .flieger-weg {
+    .flieger {
       display: none;
     }
   }

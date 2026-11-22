@@ -26,9 +26,11 @@ Für den gemeinsamen Klick-Zähler und die Empfehlungen auf der Brixmap nutze ic
 
 **Klick-Zähler:** Wenn du auf den Knopf „Wenn du mich klickst …“ klickst, schickt dein Browser die Zahl deiner Klicks an diesen Server. Gespeichert wird nur die Gesamtzahl aller Klicks. Damit niemand den Zähler mit automatischen Klicks hochtreiben kann, bildet der Server aus deiner IP-Adresse eine verschlüsselte Kennung (Hash), die sich jeden Tag ändert. Sie dient nur dazu, zu zählen, wie oft in kurzer Zeit geklickt wurde, und wird spätestens nach zwei Tagen gelöscht. Deine IP-Adresse selbst speichere ich nicht.
 
-**Empfehlungen:** Wenn du auf der Brixmap einen Ort empfiehlst, speichere ich den Namen des Orts, die Kategorie, deine Begründung, die Position auf der Karte und, falls du ihn angibst, deinen Namen. Erst wenn ich die Empfehlung freigebe, erscheinen diese Angaben öffentlich auf der Brixmap. Empfehlungen, die ich nicht freigebe, lösche ich. Gegen massenhafte Einträge gelten dieselben Grenzen wie beim Klick-Zähler.
+**Empfehlungen:** Wenn du auf der Brixmap einen Ort empfiehlst, speichere ich den Namen des Orts, die Kategorie, deine Begründung, die Position auf der Karte und, falls du ihn angibst, deinen Namen. Diese Angaben erscheinen sofort öffentlich auf der Brixmap. Ich schaue mir neue Empfehlungen regelmäßig an und lösche, was nicht auf die Karte gehört. Gegen massenhafte Einträge gelten dieselben Grenzen wie beim Klick-Zähler.
 
 **Ortssuche:** Wenn du auf der Brixmap nach einem Ort suchst, leitet mein Server deinen Suchbegriff an den Suchdienst Nominatim der OpenStreetMap Foundation weiter (St John’s Innovation Centre, Cowley Road, Cambridge, CB4 0WS, Großbritannien). Deine IP-Adresse gibt er dabei nicht weiter.
+
+**Mein Standort:** Wenn du beim Empfehlen auf „Mein Standort“ tippst, fragt dein Browser zuerst, ob die Seite deinen Standort verwenden darf. Er wird nur in deinem Browser genutzt, um die Karte dorthin zu bewegen. Ich speichere ihn nicht; gespeichert wird nur der Ort, den du am Ende empfiehlst.
 
 Rechtsgrundlage für Zähler, Suche und den Schutz vor Missbrauch ist Art. 6 Abs. 1 lit. f DSGVO. Mein berechtigtes Interesse ist, dass diese Funktionen zuverlässig und ohne Missbrauch laufen. Für die Veröffentlichung deiner Empfehlung ist es deine Einwilligung (Art. 6 Abs. 1 lit. a DSGVO), die du beim Absenden gibst. Du kannst sie jederzeit per E-Mail widerrufen, dann lösche ich deine Empfehlung.
 
@@ -50,7 +52,7 @@ Rechtsgrundlage ist deine Einwilligung durch den Klick auf Abspielen (Art. 6 Abs
 
 Die Website speichert einige wenige Angaben im Speicher deines Browsers (Local Storage und Session Storage), und zwar nur auf deinem Gerät. Sie werden nicht an mich oder an andere übertragen:
 
-- wie oft du selbst auf den Knopf „Wenn du mich klickst …“ geklickt hast, damit die Zitate der Reihe nach erscheinen
+- wie oft du selbst auf den Knopf „Wenn du mich klickst …“ geklickt hast, damit der Zähler auch weiterzählt, wenn der Server gerade nicht erreichbar ist
 - ob du die Musik angehalten oder die fliegende Platte ausgeblendet hast und wo die Platte stand, damit nichts ungewollt wieder losgeht
 - an welcher Stelle der Song gerade war, damit er beim Seitenwechsel dort weiterläuft
 

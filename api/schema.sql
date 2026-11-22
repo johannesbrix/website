@@ -1,6 +1,9 @@
 -- Datenbank des kleinen Servers (Cloudflare D1). Mehrfach ausführbar.
 
--- Brixmap-Empfehlungen. status: neu (wartet auf Freigabe) | offen (auf der Karte) | besucht
+-- Orte der Brixmap. status: offen (Empfehlung auf der Karte)
+-- | ich (Johannes' eigener Ort, gesetzt von seinem freigeschalteten Gerät)
+-- | neu (wartet auf Freigabe; nur mit FREIGABE = "pruefen"). Der Server setzt den Status immer selbst.
+-- „besucht“ gibt es seit 22.11.2026 nicht mehr.
 CREATE TABLE IF NOT EXISTS orte (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
@@ -9,10 +12,8 @@ CREATE TABLE IF NOT EXISTS orte (
   von TEXT NOT NULL DEFAULT '',
   lat REAL NOT NULL,
   lng REAL NOT NULL,
-  status TEXT NOT NULL DEFAULT 'neu' CHECK (status IN ('neu', 'offen', 'besucht')),
-  kommentar TEXT NOT NULL DEFAULT '',
-  erstellt TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
-  besucht_am TEXT
+  status TEXT NOT NULL DEFAULT 'neu' CHECK (status IN ('neu', 'offen', 'ich')),
+  erstellt TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
 CREATE INDEX IF NOT EXISTS orte_status ON orte (status);
 

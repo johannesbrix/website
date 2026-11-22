@@ -4,18 +4,24 @@ Diese Datei ist das Handbuch für Johannes und für Claude Code. Sie erklärt, w
 
 ## Überblick
 
-| Sammlung | Ordner / Datei | Wofür |
+So heißt es in Pages CMS (die Seitenleiste ist seit 22.11.2026 wie die Website aufgebaut) und dort liegt es im Repo:
+
+| Pages CMS | Datei | Wofür |
 |---|---|---|
 | Beiträge | `src/content/beitraege/<slug>.md` | Projekte (mit Status) und einzelne Beiträge, z. B. ein Brot oder ein Restaurant |
-| Bereiche | `src/content/bereiche/<slug>.md` | die vier Lebensbereiche: Intro, Foto, Reihenfolge |
-| Momente | `src/content/momente/<slug>.md` | kurze Geschichten über Begegnungen mit Menschen |
-| Seiten | `src/content/seiten/<slug>.md` | `rise-and-shine` (deine Geschichte), `brixmap` (Einleitung der Karte), `impressum`, `datenschutz` |
-| Einstellungen | `src/content/einstellungen/site.yml` | Name, Intro, Porträt, Motto-Text, Links, Song, Klick-Knopf |
-| Zitate | `src/content/einstellungen/zitate.yml` | Sprüche und Zitate für „Rise and Shine“ |
-| Videos | `src/content/einstellungen/videos.yml` | Videos für „Rise and Shine“ (Zwei-Klick-Lösung) |
-| Bücher | `src/content/einstellungen/buecher.yml` | Bücher für „Rise and Shine“ |
-| Meine Orte | `src/content/einstellungen/orte.yml` | deine eigenen Tipps für die Brixmap (☀️) |
-| Empfehlungen | Server in `api/` | Orte, die Besucher empfehlen; Freigabe auf der Admin-Seite, siehe `docs/brixmap.md` |
+| Startseite | `src/content/einstellungen/startseite.yml` | Intro und Porträt |
+| Rise & Shine › Band | `src/content/einstellungen/band.yml` | Überschrift, Text und Klick-Knopf des Bands (Startseite und Rise & Shine) |
+| Rise & Shine › Geschichte | `src/content/seiten/rise-and-shine.md` | deine Geschichte |
+| Rise & Shine › Zitate | `src/content/einstellungen/zitate.yml` | Sprüche und Zitate |
+| Rise & Shine › Videos und Reden | `src/content/einstellungen/videos.yml` | Videos und Reden |
+| Rise & Shine › Bücher | `src/content/einstellungen/buecher.yml` | Bücher |
+| Brixmap | `src/content/seiten/brixmap.md` | Text oben auf der Karte und im Brixmap-Kasten der Startseite |
+| Bereiche | `src/content/bereiche/<slug>.md` | die vier Lebensbereiche: Intro, Foto, Reihenfolge der Filter |
+| Allgemein › Name, Links und Musik | `src/content/einstellungen/site.yml` | Name, Beschreibung für Google, Links, Song |
+| Allgemein › Impressum, Datenschutz | `src/content/seiten/impressum.md`, `datenschutz.md` | Rechtliches |
+| (nicht in Pages CMS) | Server in `api/` | Orte auf der Brixmap: Empfehlungen von Besuchern und deine eigenen; setzen und löschen direkt auf der Karte, siehe `docs/brixmap.md` |
+
+Momente und „Meine Orte“ (`orte.yml`) gibt es seit 22.11.2026 nicht mehr.
 
 - Bilder liegen in `src/assets/bilder/`, gern in Unterordnern pro Projekt (`src/assets/bilder/sauna/…`).
 - Im Frontmatter steht der Pfad immer relativ: `../../assets/bilder/sauna/titel.jpg`.
@@ -27,17 +33,16 @@ Diese Datei ist das Handbuch für Johannes und für Claude Code. Sie erklärt, w
 | Feld | Pflicht | Werte | Bedeutung |
 |---|---|---|---|
 | `titel` | ja | Text | Überschrift |
-| `datum` | ja | `YYYY-MM-DD` | Erstellt bzw. Start |
-| `bereich` | ja | `gourmet` · `bauen` · `sport` · `menschen` | ordnet den Beitrag einer Bereichsseite zu |
+| `datum` | ja | `YYYY-MM-DD` | Datum des Beitrags; steht im Beitrag. Pages CMS setzt bei neuen Beiträgen automatisch heute ein |
+| `bereich` | ja | `bauen`, `gourmet`, `sport`, `menschen` | ordnet den Beitrag einer Bereichsseite zu |
 | `tags` | – | Liste | worum es geht, z. B. `[Selbstbau, Holz]` |
 | `status` | – | `geplant` · `laeuft` · `fertig` · `pausiert` | nur bei Projekten; Anzeige: Geplant / Läuft / Fertig / Pausiert |
-| `zeitraum` | – | Text | z. B. „seit Oktober 2026“ |
 | `aktiv` | – | `true` / `false` (Standard `false`) | `true` zeigt den Beitrag auf der Startseite unter „Gerade dran“. Das Feld selbst ist nirgends sichtbar |
-| `titelbild` | – | Bildpfad | Hauptbild |
+| `titelbild` | – | Bildpfad | Cover oben im Beitrag (wie bei Notion) und Bild in den Projektlisten |
 | `titelbild_alt` | – (empfohlen) | Text | Was ist zu sehen? Für Screenreader und Google |
-| `bildunterschrift` | – | Text | erscheint unter dem Titelbild |
+| `bildunterschrift` | – | Text | erscheint klein unter dem Cover |
 | `mitnehmen` | – (empfohlen) | Text | „Zum Mitnehmen“: 1–2 Sätze, was der Leser für sich mitnehmen kann. Steht hervorgehoben unter der Story |
-| `orte` | – | Liste aus `name`, `koordinaten`, `notiz?` | erscheinen mit ☀️ auf der Brixmap, mit Link zum Beitrag. `koordinaten` als `"48.13743, 11.57549"` (aus Google Maps kopiert) |
+| `orte` | – | Liste aus `name`, `koordinaten`, `notiz?` | erscheinen als deine Orte (orange Pins) auf der Brixmap, mit Link zum Beitrag. `koordinaten` als `"48.13743, 11.57549"` (aus Google Maps kopiert) |
 | `updates` | – | Liste aus `datum`, `text`, `bild?`, `bild_alt?` | Bautagebuch; angezeigt wird das Neueste zuerst |
 | `galerie` | – | Liste aus `bild`, `alt?` | zusätzliche Bilder |
 | `entwurf` | – | `true` / `false` | `true` heißt nicht veröffentlicht |
@@ -54,7 +59,6 @@ datum: 2026-10-17
 bereich: bauen
 tags: [Selbstbau]
 status: geplant
-zeitraum: "[Zeitraum]"
 aktiv: true
 titelbild: ../../assets/bilder/sauna/titel.jpg
 titelbild_alt: "[Was ist auf dem Bild zu sehen?]"
@@ -73,55 +77,38 @@ galerie:
 | Feld | Pflicht | Bedeutung |
 |---|---|---|
 | `titel` | ja | z. B. „Menschen & Community“ |
-| `navtitel` | – | kurzer Name in der Navigation, z. B. „Menschen“ |
-| `reihenfolge` | ja | 1 bis 4 |
-| `untertitel` | – | steht unter dem Namen auf der Startseiten-Kachel und als Untertitel auf der Bereichsseite, z. B. „Leidenschaftsprojekte“ |
+| `navtitel` | – | kurzer Name in den Filter-Chips bei Projekte, z. B. „Menschen“ |
+| `reihenfolge` | ja | 1 bis 4, Reihenfolge der Filter-Chips |
+| `untertitel` | – | Untertitel auf der Bereichsseite, z. B. „Leidenschaftsprojekte“ |
 | `bild`, `bild_alt` | – | Foto oben auf der Bereichsseite |
 | *(Text)* | – | Intro, 2 bis 4 Sätze |
 
 Die Slugs sind fest: `gourmet`, `bauen`, `sport`, `menschen`. Sie sind gleichzeitig die URLs.
 
-## Momente: Felder
+## Einstellungen (drei Dateien)
 
-| Feld | Pflicht | Bedeutung |
-|---|---|---|
-| `titel` | ja | |
-| `datum` | ja | wann es passiert ist |
-| `ort` | – | grob, z. B. „Stockholm“, nie eine Adresse |
-| `bild`, `bild_alt` | – | |
-| `entwurf` | – | |
-| *(Text)* | – | die Geschichte |
-
-## Einstellungen (`site.yml`)
-
-Diese Datei enthält:
-- `name`, `beschreibung` (für Google und die Link-Vorschau, höchstens 155 Zeichen), `intro`, `portrait`, `portrait_alt`
-- `motto`, `motto_text` (der Text unter „Rise and Shine“)
-- `links`: `instagram`, `strava`, `substack`, `linkedin`
-- `plattenteller`: `datei`, `titel`, `interpret`, `lizenz`, `fliegende_platte` (Easter Egg an oder aus, Standard: an)
-- `klick.knopf`: Text des Klick-Knopfs. `klick.zaehler`: Wort hinter der Zahl, angezeigt als „12× geklickt“
+Seit 22.11.2026 in drei Dateien, damit Pages CMS sie dort zeigt, wo sie auf der Website stehen. `einstellungen()` in `src/lib/inhalt.ts` fügt sie zu einem Objekt zusammen.
+- `startseite.yml`: `intro`, `portrait`, `portrait_alt`
+- `band.yml`: `motto` (Überschrift), `motto_text` (der Text darunter), `klick.knopf` (Text des Klick-Knopfs), `klick.zaehler` (Wort hinter der Zahl, angezeigt als „12× geklickt“)
+- `site.yml`: `name`, `beschreibung` (für Google und die Link-Vorschau, höchstens 155 Zeichen), `links` (`instagram`, `strava`, `substack`, `linkedin`), `plattenteller` (`datei`, `titel`, `interpret`, `lizenz`, `fliegende_platte`: Easter Egg an oder aus, Standard an)
 
 Leere Links werden nicht angezeigt.
 
 ## Zitate (`zitate.yml`)
 
-Die Datei ist eine Liste von Einträgen mit `text` (Pflicht), `von` und `quelle`. Die Reihenfolge in der Datei ist die Reihenfolge auf der Seite. Zitate kurz halten (etwa bis 60 Zeichen): Das längste bestimmt die Höhe des Zitatfelds unter dem Klick-Knopf.
+Die Datei ist eine Liste von Einträgen mit `text` (Pflicht), `von` und `quelle`. Die Reihenfolge in der Datei ist die Reihenfolge auf der Seite und in der Zitatkarte über dem Klick-Knopf (jeder Klick zeigt das nächste). Zitate kurz halten (etwa bis 60 Zeichen): Das längste bestimmt die Höhe der Zitatkarte.
 
 ## Videos (`videos.yml`)
 
-Liste mit `titel` (Pflicht), `link` (YouTube-Link, Pflicht), `von` (Kanal), `warum` (optional, ein Satz) und `geschichte` (`true` bei genau einem Video: Es steht groß neben deiner Geschichte). Abgespielt wird erst nach einem Klick; vorher lädt nichts von YouTube, auch kein Vorschaubild.
+Liste mit `titel` (Pflicht), `link` (YouTube-Link, Pflicht, gern mit Startzeit wie `&t=84s`), `von` (Kanal), `warum` (optional, ein Satz), `art` (`motivation` für den Abschnitt „Videos“, `rede` für „Reden“) und `geschichte` (`true` bei genau einem Video: Es steht groß neben deiner Geschichte und spielt erst nach einem Klick, vorher lädt nichts von YouTube). Alle anderen Videos erscheinen als Links zu YouTube.
 
 ## Bücher (`buecher.yml`)
 
-Liste mit `titel` (Pflicht), `autor`, `mitgenommen` (1–2 Sätze), `foto` und `foto_alt` (am besten ein eigenes Foto deines Exemplars; fremde Cover sind urheberrechtlich heikel) und `link`.
-
-## Meine Orte (`orte.yml`)
-
-Liste mit `name` (Pflicht), `kategorie` (`essen` · `hidden-spot` · `treffpunkt` · `sonstiges`), `koordinaten` (Pflicht, `"48.13743, 11.57549"`), `notiz` und `link`. Für Orte, zu denen es keinen Beitrag gibt. Orte mit Beitrag trägst du im Beitrag unter `orte` ein.
+Liste mit `titel` (Pflicht), `autor`, `mitgenommen` (1–2 Sätze, steht unter dem Buch), `foto` und `foto_alt` (am besten ein eigenes Foto deines Exemplars; fremde Cover sind urheberrechtlich heikel) und `link`. Ohne Foto zeigt das Regal ein schlichtes typografisches Cover mit Titel und Autor, abwechselnd dunkel und hell.
 
 ## Soll-Schema für `src/content.config.ts`
 
-Stand 21.11.2026: Maßgeblich ist der Code in `src/content.config.ts`. Gegenüber dem Schema unten sind dazugekommen: bei Beiträgen `mitnehmen` und `orte`, außerdem die Sammlungen `videos`, `buecher` und `orte` (siehe oben).
+Stand 22.11.2026: Maßgeblich ist der Code in `src/content.config.ts`. Das Schema unten ist der ursprüngliche Plan. Seitdem dazugekommen: bei Beiträgen `mitnehmen` und `orte`, die Sammlungen `videos`, `buecher`, `startseite` und `band`. Weggefallen: `zeitraum` bei Beiträgen, die Sammlungen `momente` und `orte`; `site` enthält nur noch Allgemeines.
 
 Das Schema wurde am 17.10.2026 mit **Astro 7.4** und den Startinhalten getestet, am 23.10.2026 noch einmal mit `fliegende_platte`. Der Build war grün, auch mit leeren Feldern und mit Bildern in `updates` und `galerie`. Dazu braucht es die Pakete `astro` und `js-yaml`.
 
@@ -149,7 +136,6 @@ const beitraege = defineCollection({
       bereich: z.enum(BEREICHE),
       tags: z.preprocess(leer, z.array(z.string()).default([])),
       status: z.preprocess(leer, z.enum(['geplant', 'laeuft', 'fertig', 'pausiert']).optional()),
-      zeitraum: optText,
       aktiv: z.preprocess(leer, z.boolean().default(false)),
       titelbild: optBild,
       titelbild_alt: optText,

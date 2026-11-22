@@ -9,9 +9,8 @@ So gehst du vor:
 ---
 
 **Art:** Beitrag
-<!-- Beitrag | Update | Moment
-     Update  = neuer Eintrag im Bautagebuch eines bestehenden Projekts (dann zählen nur Titel, Datum, Story, Bild)
-     Moment  = Geschichte mit Menschen (dann zählen Titel, Datum, Ort, Bild, Story) -->
+<!-- Beitrag | Update
+     Update  = neuer Eintrag im Bautagebuch eines bestehenden Projekts (dann zählen nur Titel, Datum, Story, Bild) -->
 
 **Titel:**
 
@@ -27,17 +26,11 @@ So gehst du vor:
 **Status:**
 <!-- nur bei Projekten: geplant | läuft | fertig | pausiert -->
 
-**Zeitraum:**
-<!-- z. B. seit Oktober 2026 -->
-
 **Auf Startseite zeigen:** nein
 <!-- ja = erscheint unter „Gerade dran“ -->
 
-**Ort:**
-<!-- nur bei Momenten, grob: Stadt oder Land -->
-
 **Titelbild:**
-<!-- Dateiname, z. B. IMG_2041.jpg -->
+<!-- Dateiname, z. B. IMG_2041.jpg – erscheint als Cover oben im Beitrag und in den Projektlisten; Querformat wirkt am besten -->
 
 **Bildbeschreibung:**
 <!-- Was ist auf dem Titelbild zu sehen? Ein Satz. -->

@@ -2,7 +2,6 @@ import { defineCollection } from 'astro:content';
 import { glob, file } from 'astro/loaders';
 import { z } from 'astro/zod';
 import { load } from 'js-yaml';
-import { KATEGORIE_IDS } from './lib/brixmap';
 
 // "" und null aus Pages CMS → undefined
 const leer = (v: unknown) => (v === '' || v === null ? undefined : v);
@@ -25,15 +24,9 @@ const koordinaten = z.string().transform((wert, ctx) => {
   return { lat, lng };
 });
 
-// YouTube-Link (watch, youtu.be, shorts, embed) → Video-ID
-const youtube = z.string().transform((wert, ctx) => {
-  const treffer = wert.trim().match(/(?:youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/)|youtu\.be\/)([\w-]{11})/);
-  if (!treffer) {
-    ctx.addIssue({ code: 'custom', message: `„${wert}“ ist kein YouTube-Link.` });
-    return z.NEVER;
-  }
-  return treffer[1];
-});
+// Video-ID aus einem YouTube-Link (watch, youtu.be, shorts, embed, live)
+const youtubeId = (link: string) =>
+  link.trim().match(/(?:youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/)|youtu\.be\/)([\w-]{11})/)?.[1];
 
 const beitraege = defineCollection({
   loader: glob({ base: './src/content/beitraege', pattern: '**/*.md' }),
@@ -45,7 +38,7 @@ const beitraege = defineCollection({
       bereich: z.enum(BEREICHE),
       tags: z.preprocess(leer, z.array(z.string()).default([])),
       status: z.preprocess(leer, z.enum(['geplant', 'laeuft', 'fertig', 'pausiert']).optional()),
-      zeitraum: optText,
+      // „zeitraum“ gibt es nicht mehr (Johannes, 22.11.2026: das Datum zählt); alte Einträge stören nicht
       aktiv: z.preprocess(leer, z.boolean().default(false)),
       titelbild: optBild,
       titelbild_alt: optText,
@@ -83,36 +76,22 @@ const bereiche = defineCollection({
   }),
 });
 
-const momente = defineCollection({
-  loader: glob({ base: './src/content/momente', pattern: '*.md' }),
-  schema: ({ image }) => z.object({
-    titel: z.string(),
-    datum: z.coerce.date(),
-    ort: optText,
-    bild: z.preprocess(leer, image().optional()),
-    bild_alt: optText,
-    entwurf: z.preprocess(leer, z.boolean().default(false)),
-  }),
-});
-
 const seiten = defineCollection({
   loader: glob({ base: './src/content/seiten', pattern: '*.md' }),
   schema: z.object({ titel: z.string() }),
 });
 
-// site.yml ist ein einzelnes Objekt → als Eintrag mit der ID "site" laden
+// Einstellungen liegen in drei Dateien, so wie sie in Pages CMS stehen (Johannes, 22.11.2026:
+// „etwas unübersichtlich“). Jede Datei ist ein einzelnes Objekt → ein Eintrag mit fester ID.
+// einstellungen() in src/lib/inhalt.ts fügt sie wieder zu einem Objekt zusammen.
+const einzeln = (pfad: string, id: string) => file(pfad, { parser: (text) => ({ [id]: load(text) as object }) });
+
+// Allgemein: Name, Beschreibung für Google, Links, Musik
 const site = defineCollection({
-  loader: file('src/content/einstellungen/site.yml', {
-    parser: (text) => ({ site: load(text) as object }),
-  }),
-  schema: ({ image }) => z.object({
+  loader: einzeln('src/content/einstellungen/site.yml', 'site'),
+  schema: z.object({
     name: z.string(),
     beschreibung: optText,
-    intro: z.string(),
-    portrait: z.preprocess(leer, image().optional()),
-    portrait_alt: optText,
-    motto: optText,
-    motto_text: optText,
     links: z.object({ instagram: optText, strava: optText, substack: optText, linkedin: optText }),
     plattenteller: z.object({
       datei: optText,
@@ -121,6 +100,25 @@ const site = defineCollection({
       lizenz: optText,
       fliegende_platte: z.preprocess(leer, z.boolean().default(true)),
     }),
+  }),
+});
+
+// Startseite: Intro neben dem Porträt
+const startseite = defineCollection({
+  loader: einzeln('src/content/einstellungen/startseite.yml', 'startseite'),
+  schema: ({ image }) => z.object({
+    intro: z.string(),
+    portrait: z.preprocess(leer, image().optional()),
+    portrait_alt: optText,
+  }),
+});
+
+// Rise-and-Shine-Band (Startseite und Rise & Shine): Überschrift, Text, Klick-Knopf
+const band = defineCollection({
+  loader: einzeln('src/content/einstellungen/band.yml', 'band'),
+  schema: z.object({
+    motto: optText,
+    motto_text: optText,
     klick: z.object({ knopf: optText, zaehler: optText }),
   }),
 });
@@ -141,16 +139,28 @@ const liste = (pfad: string) =>
       ((load(text) as object[] | null) ?? []).map((eintrag, i) => ({ id: String(i + 1).padStart(3, '0'), ...eintrag })),
   });
 
-// Videos für Rise & Shine. Abgespielt werden sie erst nach einem Klick (Zwei-Klick-Lösung, siehe Video.astro).
+// Videos für Rise & Shine. Das Video zur Geschichte läuft direkt auf der Seite, aber erst nach einem
+// Klick (Zwei-Klick-Lösung, Video.astro); alle anderen sind Links zu YouTube. Der Link bleibt
+// vollständig (z. B. mit Startzeit &t=84s), die ID wird daraus gelesen.
 const videos = defineCollection({
   loader: liste('src/content/einstellungen/videos.yml'),
-  schema: z.object({
-    titel: z.string(),
-    link: youtube,
-    von: optText,
-    warum: optText,
-    geschichte: z.preprocess(leer, z.boolean().default(false)),
-  }),
+  schema: z
+    .object({
+      titel: z.string(),
+      link: z.string(),
+      von: optText,
+      warum: optText,
+      art: z.preprocess(leer, z.enum(['motivation', 'rede']).default('motivation')),
+      geschichte: z.preprocess(leer, z.boolean().default(false)),
+    })
+    .transform((video, ctx) => {
+      const id = youtubeId(video.link);
+      if (!id) {
+        ctx.addIssue({ code: 'custom', message: `„${video.link}“ ist kein YouTube-Link.` });
+        return z.NEVER;
+      }
+      return { ...video, id };
+    }),
 });
 
 const buecher = defineCollection({
@@ -165,16 +175,6 @@ const buecher = defineCollection({
   }),
 });
 
-// Johannes' eigene Orte für die Brixmap (zusätzlich zu den Orten aus Beiträgen)
-const orte = defineCollection({
-  loader: liste('src/content/einstellungen/orte.yml'),
-  schema: z.object({
-    name: z.string(),
-    kategorie: z.preprocess(leer, z.enum(KATEGORIE_IDS).default('sonstiges')),
-    koordinaten,
-    notiz: optText,
-    link: optText,
-  }),
-});
-
-export const collections = { beitraege, bereiche, momente, seiten, site, zitate, videos, buecher, orte };
+// Momente und „Meine Orte“ (orte.yml) gibt es seit 22.11.2026 nicht mehr: Johannes setzt eigene Orte
+// direkt auf der Karte (docs/brixmap.md).
+export const collections = { beitraege, bereiche, seiten, site, startseite, band, zitate, videos, buecher };

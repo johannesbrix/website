@@ -1,8 +1,10 @@
 ---
-// Ein Foto über <Picture> (AVIF + WebP, responsive Breiten) oder, ohne Bild, eine ruhige Fläche ohne Text.
-// Seitenverhältnis und Radius setzt der Kontext über die Klasse .bild.
+// Ein Foto über <Picture> (AVIF + WebP, responsive Breiten) oder, ohne Bild, eine ruhige Fläche,
+// auf Wunsch mit dem Icon des Bereichs. Seitenverhältnis und Radius setzt der Kontext über .bild.
 import { Picture } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
+import Icon from './Icon.astro';
+import type { IconName } from '../lib/icons';
 
 interface Props {
   bild?: ImageMetadata;
@@ -12,10 +14,12 @@ interface Props {
   sizes: string;
   /** Sofort laden, nur für das Hauptbild oben auf der Seite. */
   sofort?: boolean;
+  /** Icon für die Fläche, solange es kein Foto gibt */
+  icon?: IconName;
   class?: string;
 }
 
-const { bild, alt = '', breiten, sizes, sofort = false, class: klasse } = Astro.props;
+const { bild, alt = '', breiten, sizes, sofort = false, icon, class: klasse } = Astro.props;
 // Nie größer rechnen als das Original
 const passend = bild ? [...new Set(breiten.map((b) => Math.min(b, bild.width)))] : [];
 ---
@@ -34,6 +38,8 @@ const passend = bild ? [...new Set(breiten.map((b) => Math.min(b, bild.width)))]
       class:list={['bild', klasse]}
     />
   ) : (
-    <span class:list={['bild', klasse]} aria-hidden="true" />
+    <span class:list={['bild', { 'bild-leer': icon }, klasse]} aria-hidden="true">
+      {icon && <Icon name={icon} />}
+    </span>
   )
 }

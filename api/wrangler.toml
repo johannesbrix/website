@@ -17,6 +17,8 @@ database_id = "00000000-0000-0000-0000-000000000000"
 # Nur diese Seiten dürfen zählen und empfehlen
 ERLAUBTE_URSPRUENGE = "https://johannesbrix.com,https://www.johannesbrix.com,http://localhost:4321"
 SEITE = "https://johannesbrix.com"
+# Empfehlungen: "sofort" auf der Karte (was nicht passt, im Admin löschen) oder "pruefen" (erst nach Freigabe im Admin)
+FREIGABE = "sofort"
 
 # Geheimnisse (nicht hier eintragen!):
 #   ADMIN_PASSWORT  Passwort für /admin            npx wrangler secret put ADMIN_PASSWORT
