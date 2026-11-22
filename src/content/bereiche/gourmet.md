@@ -4,4 +4,4 @@ navtitel: Gourmet
 reihenfolge: 2
 untertitel: Brot, Kochen, Restaurants
 ---
-[Kurzes Intro zu Gourmet, 2–4 Sätze.]
+Gutes Essen ist eines der besten Dinge, die man teilen kann. Egal, ob ein feines Restaurant, ein köstlicher Imbiss oder ein selbstgekochtes Experiment, gemeinsam genießt es sich am besten!  
