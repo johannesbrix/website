@@ -1,7 +1,7 @@
 ---
 titel: Gourmet
 navtitel: Gourmet
-untertitel: "Brot, Kochen, Restaurants"
-reihenfolge: 1
+reihenfolge: 2
+untertitel: Brot, Kochen, Restaurants
 ---
 [Kurzes Intro zu Gourmet, 2–4 Sätze.]
