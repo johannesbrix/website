@@ -46,7 +46,7 @@ Die Admin-Seite bleibt trotzdem: einmal pro Gerät zum Freischalten, als Rückfa
 
 ## Admin-Seite
 
-- Adresse: `https://<name-des-workers>.<konto>.workers.dev/admin` (steht nach dem Einrichten in `src/lib/dienste.ts` als Basis-Adresse plus `/admin`).
+- Adresse: https://johannesbrix-api.johannesbrix-api.workers.dev/admin (eingerichtet am 22.11.2026; die Basis-Adresse steht in `src/lib/dienste.ts`). Cloudflare-Konto: über Johannes' GitHub-Anmeldung, Datenbank `johannesbrix` in Westeuropa.
 - Nur ein Zugang, mit einem langen Passwort (Secret `ADMIN_PASSWORT`). Die Anmeldung hält 30 Tage, auch am Handy.
 - Dort: ein Gerät freischalten (siehe oben), Orte löschen und bearbeiten, den Klick-Zähler korrigieren. Abschnitte: „Deine Orte“ und „Empfehlungen“ (die der letzten 7 Tage mit „Neu“).
 - Keine Benachrichtigung bei neuen Empfehlungen. Einfach ab und zu reinschauen.

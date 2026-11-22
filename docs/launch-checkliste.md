@@ -29,9 +29,9 @@ Für `johannesbrix.com`, z. B. bei Squarespace Domains, falls die Domain dort li
 
 Ohne diesen Schritt läuft die Seite trotzdem: Der Klick-Zähler zählt dann nur die eigenen Klicks, und auf der Brixmap gibt es kein Formular. Anleitung: `docs/brixmap.md`, Abschnitt „Einrichten“.
 
-- [ ] Kostenloses Konto auf dash.cloudflare.com anlegen, `workers.dev`-Namen wählen (z. B. `johannesbrix`).
-- [ ] Claude Code sagen: „Richte den Server in api/ ein.“ Dabei öffnet sich einmal der Browser für die Anmeldung bei Cloudflare.
-- [ ] Ein langes Admin-Passwort festlegen und im Passwort-Manager speichern.
+- [x] Kostenloses Konto auf dash.cloudflare.com (über GitHub angemeldet, 22.11.2026).
+- [x] Server eingerichtet: Datenbank, Geheimschlüssel, veröffentlicht unter https://johannesbrix-api.johannesbrix-api.workers.dev, Adresse in `src/lib/dienste.ts`.
+- [ ] Ein langes Admin-Passwort festlegen (`npx wrangler secret put ADMIN_PASSWORT` im Ordner `api/`) und im Passwort-Manager speichern.
 - [ ] Admin-Seite öffnen, anmelden, Lesezeichen am Handy setzen.
 - [ ] Test: auf der Brixmap einen Ort empfehlen (erscheint sofort) und ihn wieder löschen, am freigeschalteten Handy direkt an der Ortskarte.
 

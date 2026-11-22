@@ -10,8 +10,8 @@ crons = ["17 3 * * *"]
 [[d1_databases]]
 binding = "DB"
 database_name = "johannesbrix"
-# Wird beim Einrichten durch die ID aus `npx wrangler d1 create johannesbrix` ersetzt
-database_id = "00000000-0000-0000-0000-000000000000"
+# ID aus `npx wrangler d1 create johannesbrix` (22.11.2026, Region Westeuropa)
+database_id = "03241207-af3b-418a-bd75-253741415d30"
 
 [vars]
 # Nur diese Seiten dürfen zählen und empfehlen
