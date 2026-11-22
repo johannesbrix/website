@@ -1,7 +1,7 @@
 ---
 titel: Bauen
 navtitel: Bauen
-untertitel: "Leidenschaftsprojekte"
-reihenfolge: 2
+reihenfolge: 1
+untertitel: Leidenschaftsprojekte
 ---
 [Kurzes Intro zu Bauen, 2–4 Sätze.]
