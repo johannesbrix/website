@@ -6,6 +6,9 @@ import { readdir, stat, writeFile } from 'node:fs/promises';
 import { extname, join, relative } from 'node:path';
 import sharp from 'sharp';
 
+// Ohne das hält sharp unter Windows die Originaldatei offen, und das Überschreiben scheitert (UNKNOWN, open).
+sharp.cache(false);
+
 const MAX = 2400;
 const ENDUNGEN = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 const ziele = process.argv.slice(2).length ? process.argv.slice(2) : ['src/assets/bilder'];

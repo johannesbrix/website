@@ -27,7 +27,7 @@ const beschreibung = kurz(intro && !intro.startsWith('[') ? intro : (untertitel 
 
 <Basis titel={titel} beschreibung={beschreibung} bild={await teilbild(bild)}>
   <Bereichsfilter aktiv={bereich.id} />
-  <section class="bereich-kopf rahmen" aria-labelledby="bereich-titel">
+  <section class:list={['bereich-kopf rahmen', { 'ohne-bild': !bild }]} aria-labelledby="bereich-titel">
     <div>
       <h1 class="bereich-titel" id="bereich-titel">{titel}</h1>
       {untertitel && <p class="bereich-untertitel">{untertitel}</p>}
@@ -39,9 +39,14 @@ const beschreibung = kurz(intro && !intro.startsWith('[') ? intro : (untertitel 
         )
       }
     </div>
-    <figure class="bereich-bild">
-      <Foto bild={bild} alt={bild_alt} icon={BEREICH_ICONS[bereich.id]} breiten={[800, 1200, 1600]} sizes="(max-width: 760px) 100vw, 45vw" sofort />
-    </figure>
+    {/* Ohne Foto kein Platzhalter-Kasten (Johannes, 22.11.2026), der Text steht dann allein. */}
+    {
+      bild && (
+        <figure class="bereich-bild">
+          <Foto bild={bild} alt={bild_alt} icon={BEREICH_ICONS[bereich.id]} breiten={[800, 1200, 1600]} sizes="(max-width: 760px) 100vw, 45vw" sofort />
+        </figure>
+      )
+    }
   </section>
 
   <section class="abschnitt rahmen" aria-labelledby="beitraege">
@@ -57,6 +62,9 @@ const beschreibung = kurz(intro && !intro.startsWith('[') ? intro : (untertitel 
     gap: clamp(28px, 5cqi, 80px);
     align-items: end;
     padding-block: clamp(24px, 5cqi, 72px) clamp(8px, 2cqi, 24px);
+  }
+  .bereich-kopf.ohne-bild {
+    grid-template-columns: minmax(0, 1fr);
   }
   .bereich-titel {
     font-weight: 700;

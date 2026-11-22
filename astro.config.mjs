@@ -31,6 +31,10 @@ export default defineConfig({
   // Das CSS ist klein (rund 3,5 KB komprimiert). Direkt im HTML spart es beim ersten Besuch
   // (meist am Handy über Instagram) einen Roundtrip vor dem ersten Bild.
   build: { inlineStylesheets: 'always' },
+  // Kurzer Weg zur Admin-Seite des Servers (api/). Muss zur Adresse in src/lib/dienste.ts passen.
+  redirects: {
+    '/admin': 'https://johannesbrix-api.johannesbrix-api.workers.dev/admin',
+  },
   markdown: {
     processor: satteri({
       // Keine automatischen englischen Anführungszeichen: Johannes' Text erscheint so, wie er ihn tippt.

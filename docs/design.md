@@ -227,7 +227,7 @@ So sieht das im Basis-Layout aus:
    - Untertitel (Literata kursiv, `--leise`)
    - Intro (Literata 18 bis 20 px, höchstens 34em)
 
-   Rechts das Bereichsfoto (4:3, `--r-gross`). Am Handy steht alles untereinander.
+   Rechts das Bereichsfoto (4:3, `--r-gross`). Am Handy steht alles untereinander. Ohne Foto gibt es keinen Platzhalter-Kasten, der Text steht allein (Johannes, 22.11.2026).
 2. „Beiträge“ (h2), darunter ein **Kartenraster** `repeat(auto-fill, minmax(min(300px, 100%), 1fr))`: am Desktop 3 Spalten, am Handy 1.
 3. Jede Karte:
    - Bild 4:3 (`--r`)
